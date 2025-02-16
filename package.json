@@ -1,0 +1,123 @@
+{
+  "name": "protasker",
+  "displayName": "Protasker",
+  "description": "An easy way to organize code and tasks in one place.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.97.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:protasker.openNotesExplorer"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+          {
+              "id":"sidebar_protasker",
+              "title": "ProTasker",
+              "icon": "notes.png"
+          }
+      ]
+    },
+    "views": {
+      
+      "sidebar_protasker":[
+        {
+            "id":"sidebar_protasker_id1",
+            "name":"Tasks list"
+        }
+      ],
+      "explorer": [
+        {
+          "id": "notesExplorer",
+          "name": "Notes Explorer"
+        }
+      ]
+    },
+    "commands": [{
+      "command": "protasker.openNotesExplorer",
+      "title": "Open Notes Explorer"
+    },
+    {
+      "command": "protasker.addNoteToFile",
+      "title": "Add Note to File"
+    },
+    {
+      "command": "protasker.addNoteToDirectory",
+      "title": "Add Note to Directory"
+    },
+    {
+      "command": "protasker.addNoteToLine",
+      "title": "Add Note to line"
+    },
+    {
+      "command": "protasker.editNote",
+      "title": "✏️ Edit Note"
+    },
+    {
+      "command": "protasker.deleteNote",
+      "title": "🗑️ Delete Note"
+    },
+    {
+      "command": "protasker.addNote",
+      "title": "Add Note",
+      "icon": "$(plus)"
+    },
+    {
+      "command": "protasker.filterNotes",
+      "title": "Filter Notes",
+      "icon": "$(filter)"
+    },
+    {
+      "command": "protasker.searchNotes",
+      "title": "Search Notes",
+      "icon": "$(search)"
+    }],
+    "menus": {
+    "view/title": [
+      {
+        "command": "protasker.addNote",
+        "group": "navigation"
+      },
+      {
+        "command": "protasker.filterNotes",
+        "group": "navigation"
+      },
+      {
+        "command": "protasker.searchNotes",
+        "group": "navigation"
+      }
+    ],
+    "view/item/context": [
+    {
+      "command": "protasker.editNote",
+      "when": "viewItem == noteItem",
+      "group": "navigation"
+    },
+    {
+      "command": "protasker.deleteNote",
+      "when": "viewItem == noteItem",
+      "group": "navigation"
+    }
+  ]
+  }
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.97.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "eslint": "^9.19.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1"
+  }
+}

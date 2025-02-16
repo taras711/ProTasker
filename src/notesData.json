@@ -1,0 +1,126 @@
+{
+  "files": {
+    "c:\\Users\\taras\\Desktop\\Projects\\App\\View\\view.png": {
+      "notes": [],
+      "lines": {}
+    },
+    "path/to/file.js": {
+      "notes": [],
+      "lines": {
+        "10": [
+          {
+            "id": 1739707063702,
+            "type": "comment",
+            "content": "еуые дшту",
+            "createdAt": "2025-02-16T11:57:43.703Z"
+          }
+        ]
+      }
+    },
+    "c:\\Users\\taras\\Desktop\\Projects\\App\\View\\View.html": {
+      "notes": [
+        {
+          "id": 1739711560837,
+          "type": "note",
+          "content": "test",
+          "createdAt": "2025-02-16T13:12:40.837Z"
+        }
+      ],
+      "lines": {
+        "12": [
+          {
+            "id": 1739710190774,
+            "type": "comment",
+            "content": "test",
+            "createdAt": "2025-02-16T12:49:50.774Z"
+          }
+        ],
+        "13": [
+          {
+            "id": 1739710070298,
+            "type": "comment",
+            "content": "test",
+            "createdAt": "2025-02-16T12:47:50.298Z"
+          }
+        ]
+      }
+    },
+    "c:\\Users\\taras\\OneDrive\\Plocha\\Projects\\App\\CalenGen\\service.calendar.js": {
+      "notes": [
+        {
+          "id": 1739718282097,
+          "type": "note",
+          "content": "еуые",
+          "createdAt": "2025-02-16T15:04:42.097Z"
+        },
+        {
+          "id": 1739722540771,
+          "type": "note",
+          "content": "file",
+          "createdAt": "2025-02-16T16:15:40.771Z"
+        }
+      ],
+      "lines": {
+        "228": [
+          {
+            "id": 1739718300865,
+            "type": "comment",
+            "content": "еуые",
+            "createdAt": "2025-02-16T15:05:00.865Z"
+          }
+        ]
+      }
+    },
+    "c:\\Users\\taras\\OneDrive\\Plocha\\Projects\\App\\CalenGen\\ui.fragments.dashboard.js": {
+      "notes": [
+        {
+          "id": 1739722558465,
+          "type": "note",
+          "content": "file2",
+          "createdAt": "2025-02-16T16:15:58.465Z"
+        }
+      ],
+      "lines": {
+        "157": [
+          {
+            "id": 1739732612432,
+            "type": "comment",
+            "content": "bfb",
+            "createdAt": "2025-02-16T19:03:32.432Z"
+          }
+        ]
+      }
+    }
+  },
+  "directories": {
+    "path/to/directory": {
+      "notes": [
+        {
+          "id": 1739709063994,
+          "type": "note",
+          "content": "еуые",
+          "createdAt": "2025-02-16T12:31:03.994Z"
+        },
+        {
+          "id": 1739709756482,
+          "type": "note",
+          "content": "еуые",
+          "createdAt": "2025-02-16T12:42:36.482Z"
+        }
+      ]
+    },
+    "c:\\Users\\taras\\Desktop\\Projects\\App": {
+      "notes": []
+    },
+    "c:\\Users\\taras\\OneDrive\\Plocha\\Projects\\App\\CalenGen\\Service": {
+      "notes": [
+        {
+          "id": 1739732633088,
+          "type": "note",
+          "content": "vdsfsv",
+          "createdAt": "2025-02-16T19:03:53.088Z"
+        }
+      ]
+    }
+  }
+}
