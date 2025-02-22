@@ -4,6 +4,7 @@ const vscode = require('vscode');
 
 class NotesExplorer {
     constructor() {
+        this.activeDecorationType = null;
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
         
@@ -15,17 +16,15 @@ class NotesExplorer {
         try {
             if (fs.existsSync(this.dataNotes)) {
                 const data = JSON.parse(fs.readFileSync(this.dataNotes).toString());
-                console.log("✅ DEBUG: Загруженные notesData", JSON.stringify(data, null, 2));
                 return data;
             }
         } catch (error) {
             console.error("❌ Ошибка при загрузке заметок:", error);
         }
-        return { files: {}, directories: {} };
+        return { files: {}, directories: {}, lines: {} };
     }
 
     saveNotesToFile() {
-        console.log("✅ DEBUG: Перед сохранением в JSON", JSON.stringify(this.notesData, null, 2));
         try {
             fs.writeFileSync(this.dataNotes, JSON.stringify(this.notesData, null, 2));
             this.refresh();
@@ -35,91 +34,203 @@ class NotesExplorer {
     }
 
     getTreeItem(element) {
-        console.log(element)
         const treeItem = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
     
-        //console.log("DEBUG getTreeItem - element:", element); // Отладка
-    
-        if (element.type === 'file' || element.type === 'directory') {
-            if (element.createdAt) {
-                const date = new Date(element.createdAt);
-                treeItem.description = `📅 ${isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleDateString()}`;
-            } else {
-                treeItem.description = "📅 No date";
-            }
-
-            //treeItem.id = element.id; // ✅ Теперь ID передаётся
-    
-            treeItem.contextValue = "noteItem";
+        // Устанавливаем правильный contextValue в зависимости от типа элемента
+        if (["note", "comment", "checklist", "event"].includes(element.type)) {
+            treeItem.id = element.id;  // Присваиваем id
+            treeItem.contextValue = `${element.type}Item`;  // Используем тип как суффикс
+        } else if (element.type === "line") {
+            treeItem.contextValue = "lineItem";
+        } else {
+            treeItem.contextValue = "folderItem";
         }
-
-        console.log("DEBUG getTreeItem - treeItem:", treeItem);
+        console.log(JSON.stringify(element))
     
         return treeItem;
     }
 
-    getContent(element = {}){
-      if(!element || element == {}) return {};
+    getData(data){
+        if(!data) return {};
+        const keys = Object.keys(data).map(filePath => {return data[filePath]})
 
-      if(element instanceof Object){
-        if("notes" in element){
-            if(element.notes instanceof Array && element.notes.length > 0){
-                return element.notes;
-            }
-        }
-        else if("lines" in element){
-            if(element.lines instanceof Object && Object.keys(element.lines).length > 0){
-                return Object.keys(element.lines).map(key => ({
-                    line: key,
-                    notes: element.lines[key]
+        return keys;
+    }
+    
+
+    async getChildren(element) {
+        if (!element) {
+            const categories = ['files', 'directories', 'lines'];
+            const results = [];
+            
+            // Проходим по каждой категории
+            categories.forEach(cat => {
+                const categoryData = this.notesData[cat]; // Динамически извлекаем данные
+                Object.keys(categoryData).forEach(itemPath => {
+                    const item = categoryData[itemPath];
+                    console.log(this.extractItemData(item))
+                    // Для каждой записи в категории (например, file или directory) добавляем все категории (notes, comments и т.д.)
+                    results.push({
+                        label: cat === "directories" ? this.getDirectoryLabel(itemPath) :
+                           cat === "files" ? this.getFileLabel(itemPath) :
+                           `📌 ${path.basename(itemPath)}`,
+                        type: cat, // Тип категории (file, directory, или line)
+                        path: itemPath,
+                        ...this.extractItemData(item), // Динамически извлекаем все данные: заметки, комментарии, события и т.д.
+                    });
+                });
+            });
+            
+            return results;
+        } else if (element.type === "file") {
+            return [
+                ...this.getEntries(this.notesData.files[element.path], element.path)
+            ];
+        } else if (element.type === "directory") {
+            return [
+                ...this.getEntries(this.notesData.directories[element.path], element.path)
+            ];
+        } else if (element.type === "lineGroup") {
+            return Object.keys(this.notesData.lines[element.path] || {}).map(lineNumber => ({
+                label: `📌 Line ${lineNumber}`,
+                type: "line",
+                line: parseInt(lineNumber),
+                path: element.path
+            }));
+        } else if (element.type === "line") {
+            const fileNotes = this.notesData.lines[element.path]?.[element.line] || [];
+            if (fileNotes.length > 0) {
+                return fileNotes.map(note => ({
+                    label: `📌 ${note.content}`,
+                    type: "note",
+                    line: element.line,
+                    filePath: element.path,
+                    noteId: note.id
                 }));
             }
         }
-        return {};
-      }
+
+        if (element.type === "file") {
+            return this.getEntries(this.notesData.files[element.path] || {}, element.path);
+        }
+        if (element.type === "directory") {
+            return this.getEntries(this.notesData.directories[element.path] || {}, element.path);
+        }
+        return [];
+    }
+// Функция для отображения значков файлов с заметками
+getFileLabel(filePath) {
+    const hasNotes = this.notesData.files[filePath]?.notes.length > 0;
+    const hasComments = Object.keys(this.notesData.files[filePath]?.lines || {}).length > 0;
+    return `${hasNotes || hasComments ? '📝 ' : ''}${path.basename(filePath)}`;
+}
+
+    // Функция для папок
+getDirectoryLabel(directoryPath) {
+    const hasNotes = this.notesData.directories[directoryPath]?.notes.length > 0;
+    return `${hasNotes ? '📂📝 ' : '📂 '}${path.basename(directoryPath)}`;
+}
+
+    // Вспомогательная функция для извлечения всех данных (заметки, комментарии, чеклисты и события) для объекта
+extractItemData(item, parent = null) {
+    const allCategories = ['notes', 'comments', 'checklists', 'events']; // Все возможные категории данных
+    const extractedData = [];
+
+    // Для каждой категории данных (заметки, комментарии и т.д.)
+    allCategories.forEach(category => {
+        if (item[category] && item[category].length > 0) {
+            item[category].forEach(entry => {
+                extractedData.push({
+                    label: `${category.slice(0, 1).toUpperCase()}${category.slice(1)}: ${entry.content}`, // Заголовок категории
+                    type: category.slice(0, -1), // Тип записи, например: "note", "comment", и т.д.
+                    id: entry.id,
+                    content: entry.content,
+                    createdAt: entry.createdAt || new Date().toISOString(),
+                    parent: parent ? parent.path : null, // Если есть родитель, передаем его путь
+                });
+            });
+        }
+    });
+
+    return extractedData;
+}
+
+    getEntries(target, parentPath) {
+        if (!target) return [];
+
+        return [
+            ...(target.notes || []).map(note => ({
+                label: `📝 ${note.content}`,
+                type: "note",
+                id: note.id,
+                parent: parentPath
+            })),
+            ...(target.comments || []).map(comment => ({
+                label: `💬 ${comment.content}`,
+                type: "comment",
+                id: comment.id,
+                parent: parentPath
+            })),
+            ...(target.checklists || []).map(checklist => ({
+                label: `✅ ${checklist.content}`,
+                type: "checklist",
+                id: checklist.id,
+                parent: parentPath
+            })),
+            ...(target.events || []).map(event => ({
+                label: `📅 ${event.content}`,
+                type: "event",
+                id: event.id,
+                parent: parentPath
+            }))
+        ];
     }
 
-    async getChildren(element) {
-        let _this = this;
-        if (!element) {
-            return [
-                ...Object.keys(this.notesData.files).map(filePath => ({
-                    label: path.basename(filePath),
-                    type: 'file',
-                    path: filePath,
-                    createdAt: this.notesData.files[filePath]?.createdAt || new Date().toISOString(), // Добавляем дату
-                })),
-                ...Object.keys(this.notesData.directories).map(dirPath => ({
-                    label: path.basename(dirPath),
-                    type: 'directory',
-                    path: dirPath,
-                    
-                    createdAt: this.notesData.directories[dirPath]?.createdAt || new Date().toISOString(), // Добавляем дату
-                    id: this.notesData.files[dirPath]?.notes.id || null
-                }))
-            ];
-        } else if (element.type === 'file') {
-            let notes = this.notesData.files[element.path]?.notes || [];
-            let lines = this.notesData.files[element.path]?.lines || {};
-    
-            return [
-                ...notes.map(note => ({
-                    label: `📝 ${note.content}`,
-                    type: 'note',
-                    createdAt: note.createdAt || new Date().toISOString(), // Добавляем дату
-                    parent: element.path
-                })),
-                ...Object.keys(lines).map(lineNumber => ({
-                    label: `📌 Line ${lineNumber}`,
-                    type: 'line',
-                    createdAt: new Date().toISOString(), // Дата для строк
-                    line: parseInt(lineNumber),
-                    parent: element.path
-                }))
-            ];
+    async addNoteToFile(filePath, content, type = "note") {
+        if (!this.notesData.files[filePath]) {
+            this.notesData.files[filePath] = { notes: [] };
         }
+        this.notesData.files[filePath][type + "s"].push({
+            id: Date.now(),
+            type,
+            categories: "file",
+            content,
+            createdAt: new Date().toISOString()
+        });
+
+        await this.saveNotesToFile();
     }
+
+    addNoteToLine(filePath, lineNumber, entryType, noteContent) {
+        const typeKey = entryType.toLowerCase() + "s";  // Преобразуем тип записи в соответствующую категорию, например, "comments", "checklists"
+        filePath = path.normalize(filePath).replace(/\\/g, "/").toLowerCase() // Используем только имя файла
+        // Проверяем, существует ли файл, и если нет, создаем структуру данных для этого файла
+        // if (!this.notesData.files[filePath]) {
+        //     this.notesData.files[filePath] = { notes: [], comments: [], checklists: [], events: [], lines: {} };
+        // }
     
+        // Проверяем, существует ли для этой строки запись, и если нет, создаем её
+        if (!this.notesData.lines[filePath]) {
+            this.notesData.lines[filePath] = [];
+        }
+
+        console.log(noteContent)
+    
+        // Добавляем новую запись в категорию строк
+        this.notesData.lines[filePath].push({
+            line: lineNumber,
+            id: Date.now(),
+            type: entryType.toLowerCase(),
+            content: noteContent,
+            createdAt: new Date().toISOString()
+        });
+    
+        this.saveNotesToFile();
+    }
+
+    normalizePath(filePath) {
+        return path.normalize(filePath).replace(/\\/g, "/").toLowerCase();
+    }
     
 
     refresh() {
@@ -127,68 +238,37 @@ class NotesExplorer {
         this._onDidChangeTreeData.fire();
     }
 
-    async addNoteToFile(filePath, content) {
-        if (!this.notesData.files[filePath]) {
-            this.notesData.files[filePath] = { notes: [], lines: {} };
+    async addEntry(targetPath, isDirectory = false, entryType, noteContent, categories) {
+        const typeKey = entryType.toLowerCase() + "s"; // Пример: "notes", "comments", "checklists", "events"
+    
+        // Добавляем тип записи в файл или папку
+        let target;
+        if (isDirectory) {
+            if (!this.notesData.directories[targetPath]) {
+                this.notesData.directories[targetPath] = { notes: [], comments: [], checklists: [], events: [] };
+            }
+            target = this.notesData.directories[targetPath];
+        } else {
+            if (!this.notesData.files[targetPath]) {
+                this.notesData.files[targetPath] = { notes: [], comments: [], checklists: [], events: [] };
+            }
+            target = this.notesData.files[targetPath];
         }
     
-        this.notesData.files[filePath].notes.push({
+        // Добавляем запись
+        target[typeKey].push({
             id: Date.now(),
-            type: 'note',
-            content,
-            createdAt: new Date().toISOString() // Дата создаётся правильно!
+            type: entryType.toLowerCase(),
+            content: noteContent,  // Передаем сюда текст
+            categories: categories,
+            createdAt: new Date().toISOString()
         });
     
         await this.saveNotesToFile();
     }
-
-    addNoteToLine(filePath, lineNumber, content) {
-        if (!this.notesData.files[filePath]) {
-            this.notesData.files[filePath] = { notes: [], lines: {} };
-        }
-        if (!this.notesData.files[filePath].lines[lineNumber]) {
-            this.notesData.files[filePath].lines[lineNumber] = [];
-        }
-        this.notesData.files[filePath].lines[lineNumber].push({ id: Date.now(), type: 'comment', content, createdAt: new Date().toISOString() });
-        this.saveNotesToFile();
-    }
-
-    addNoteToDirectory(directoryPath, content) {
-        if (!this.notesData.directories[directoryPath]) {
-            this.notesData.directories[directoryPath] = { notes: [] };
-        }
-        this.notesData.directories[directoryPath].notes.push({ id: Date.now(), type: 'note', content, createdAt: new Date().toISOString() });
-        this.saveNotesToFile();
-    }
-
-    addContextMenuCommands(context) {
-        context.subscriptions.push(vscode.commands.registerCommand('notesExplorer.addNoteToFile', (uri) => {
-            vscode.window.showInputBox({ prompt: 'Введите заметку' }).then(content => {
-                if (content) {
-                    this.addNoteToFile(uri.fsPath, content);
-                }
-            });
-        }));
-
-        context.subscriptions.push(vscode.commands.registerCommand('notesExplorer.addNoteToDirectory', (uri) => {
-            vscode.window.showInputBox({ prompt: 'Введите заметку для папки' }).then(content => {
-                if (content) {
-                    this.addNoteToDirectory(uri.fsPath, content);
-                }
-            });
-        }));
-
-        context.subscriptions.push(vscode.commands.registerTextEditorCommand('notesExplorer.addNoteToLine', (editor) => {
-            const { document, selection } = editor;
-            const filePath = document.uri.fsPath;
-            const lineNumber = selection.start.line;
-            vscode.window.showInputBox({ prompt: 'Введите комментарий к строке' }).then(content => {
-                if (content) {
-                    this.addNoteToLine(filePath, lineNumber, content);
-                }
-            });
-        }));
-    }
+    
+    
+    
 }
 
 module.exports = { NotesExplorer };

@@ -11,101 +11,137 @@
   ],
   "activationEvents": [
     "onStartupFinished",
-    "onCommand:protasker.openNotesExplorer"
+    "onDidChangeActiveTextEditor"
   ],
   "main": "./extension.js",
   "contributes": {
     "viewsContainers": {
-      "activitybar": [
-          {
-              "id":"sidebar_protasker",
-              "title": "ProTasker",
-              "icon": "notes.png"
-          }
-      ]
+      "activitybar": [{
+        "id": "sidebar_protasker",
+        "title": "ProTasker",
+        "icon": "notes.png"
+      }]
     },
     "views": {
-      
-      "sidebar_protasker":[
-        {
-            "id":"sidebar_protasker_id1",
-            "name":"Tasks list"
-        }
-      ],
-      "explorer": [
-        {
-          "id": "notesExplorer",
-          "name": "Notes Explorer"
-        }
-      ]
+
+      "sidebar_protasker": [{
+        "id": "sidebar_protasker_id1",
+        "name": "Tasks list"
+      }],
+      "explorer": [{
+        "id": "notesExplorer",
+        "name": "Notes Explorer"
+      }]
     },
-    "commands": [{
-      "command": "protasker.openNotesExplorer",
-      "title": "Open Notes Explorer"
-    },
-    {
-      "command": "protasker.addNoteToFile",
-      "title": "Add Note to File"
-    },
-    {
-      "command": "protasker.addNoteToDirectory",
-      "title": "Add Note to Directory"
-    },
-    {
-      "command": "protasker.addNoteToLine",
-      "title": "Add Note to line"
-    },
-    {
-      "command": "protasker.editNote",
-      "title": "✏️ Edit Note"
-    },
-    {
-      "command": "protasker.deleteNote",
-      "title": "🗑️ Delete Note"
-    },
-    {
-      "command": "protasker.addNote",
-      "title": "Add Note",
-      "icon": "$(plus)"
-    },
-    {
-      "command": "protasker.filterNotes",
-      "title": "Filter Notes",
-      "icon": "$(filter)"
-    },
-    {
-      "command": "protasker.searchNotes",
-      "title": "Search Notes",
-      "icon": "$(search)"
-    }],
-    "menus": {
-    "view/title": [
+    "commands": [
+      {
+        "command": "protasker.openComment",
+        "title": "📜 Open Comment"
+      },
+      {
+        "command": "protasker.openNotesExplorer",
+        "title": "Open Notes Explorer"
+      },
+      {
+        "command": "protasker.addNoteToFile",
+        "title": "Add Note to File"
+      },
+      {
+        "command": "protasker.addNoteToDirectory",
+        "title": "Add Note to Directory"
+      },
+      {
+        "command": "protasker.editNote",
+        "title": "✏️ Edit Note"
+      },
+      {
+        "command": "protasker.deleteNote",
+        "title": "🗑️ Delete Note"
+      },
+      {
+        "command": "protasker.deleteNoteFromLine",
+        "title": "🗑️ Delete Note from Line"
+      },
       {
         "command": "protasker.addNote",
-        "group": "navigation"
+        "title": "Add Note",
+        "icon": "$(plus)"
+      },
+      {
+        "command": "protasker.addNoteToLine",
+        "title": "Add Note"
       },
       {
         "command": "protasker.filterNotes",
-        "group": "navigation"
+        "title": "Filter Notes",
+        "icon": "$(filter)"
       },
       {
         "command": "protasker.searchNotes",
-        "group": "navigation"
+        "title": "Search Notes",
+        "icon": "$(search)"
       }
     ],
-    "view/item/context": [
+    "menus": {
+      "editor/context": [{
+        "command": "protasker.openComment",
+        "when": "editorTextFocus",
+        "group": "navigation"
+      },
+      {
+        "command": "protasker.addNoteToLine",
+        "when": "editorTextFocus",
+        "group": "navigation"
+    },
     {
       "command": "protasker.editNote",
-      "when": "viewItem == noteItem",
+      "when": "editorTextFocus",
       "group": "navigation"
     },
     {
-      "command": "protasker.deleteNote",
-      "when": "viewItem == noteItem",
-      "group": "navigation"
+        "command": "protasker.deleteNoteFromLine",
+        "when": "editorTextFocus",
+        "group": "navigation"
+    }],
+      "view/title": [{
+          "command": "protasker.openComment",
+          "title": "📜 Открыть комментарий"
+        },
+        {
+          "command": "protasker.addNote",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.filterNotes",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.searchNotes",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.addNoteToLine",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.editNote",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [{
+          "command": "protasker.editNote",
+          "when": "viewItem == noteItem",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.deleteNote",
+          "when": "viewItem == noteItem",
+          "group": "navigation"
+        }
+      ]
     }
-  ]
-  }
   },
   "scripts": {
     "lint": "eslint .",
