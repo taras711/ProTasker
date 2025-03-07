@@ -23,11 +23,11 @@
             "items": [
               {
                 "text": "sfsd sd",
-                "done": false
+                "done": true
               },
               {
                 "text": "sfd ds sd",
-                "done": true
+                "done": false
               },
               {
                 "text": "gh gfhfgh fhfg",

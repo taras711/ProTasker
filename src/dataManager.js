@@ -100,30 +100,65 @@ class NotesExplorer {
                     return this.searchResults;
                 }
                     
-                // 🌳 Корневой список — директории + файлы + строки
-                const directories = Object.keys(this.notesData.directories).map(dirPath =>{
+                const directories = Object.keys(this.notesData.directories).map(dirPath => {
                     const dirData = this.notesData.directories[dirPath];
+                    
+                    // 🔍 Проверка наличия оповещений
+                    const hasDeadline = Object.values(dirData)
+                        .filter(Array.isArray)
+                        .flat()
+                        .some(note => note?.deadline);
+                    
                     const totalRecords = Object.values(dirData)
-                        .filter(Array.isArray) // 🛡️ Оставляем только массивы
+                        .filter(Array.isArray)
                         .reduce((sum, category) => sum + category.length, 0);
-                    if(this.viewId !== null && dirPath !== pathDir) return;
-                    return new NoteItem(`📁 ${path.basename(dirPath)}`, vscode.TreeItemCollapsibleState.Collapsed, { count: totalRecords, directory: dirPath, prov: "file", contextValue: "directory" })
+                
+                    if (this.viewId !== null && dirPath !== pathDir) return;
+                
+                    return new NoteItem(
+                        `${hasDeadline ? "📁(🔔)" : "📁"} ${path.basename(dirPath)}`,
+                        vscode.TreeItemCollapsibleState.Collapsed,
+                        { count: totalRecords, directory: dirPath, prov: "file", contextValue: "directory" }
+                    );
                 });
+                
                 const files = Object.keys(this.notesData.files).map(filePath => {
-                    const dirData = this.notesData.files[filePath];
-                    const totalRecords = Object.values(dirData)
-                        .filter(Array.isArray) // 🛡️ Оставляем только массивы
+                    const fileData = this.notesData.files[filePath];
+                
+                    // 🔍 Проверка наличия оповещений
+                    const hasDeadline = Object.values(fileData)
+                        .filter(Array.isArray)
+                        .flat()
+                        .some(note => note?.deadline);
+                
+                    const totalRecords = Object.values(fileData)
+                        .filter(Array.isArray)
                         .reduce((sum, category) => sum + category.length, 0);
-                    if(this.viewId !== null && filePath !== file) return;
-                    return new NoteItem(`📄 ${path.basename(filePath)}`, vscode.TreeItemCollapsibleState.Collapsed, { count: totalRecords, file: filePath, prov: "directories", contextValue: "file" })
+                
+                    if (this.viewId !== null && filePath !== file) return;
+                
+                    return new NoteItem(
+                        `${hasDeadline ? "📄(🔔)" : "📄"} ${path.basename(filePath)}`,
+                        vscode.TreeItemCollapsibleState.Collapsed,
+                        { count: totalRecords, file: filePath, prov: "directories", contextValue: "file" }
+                    );
                 });
-                const lines = Object.keys(this.notesData.lines).map(filePath =>{
-                    console.log("File path: " + this.viewId + " " + file)
-                    if(this.viewId !== null && filePath !== file) return;
-                    return new NoteItem(`📍 ${path.basename(filePath)}`, vscode.TreeItemCollapsibleState.Collapsed, {count: this.notesData.lines[filePath].length, lineFile: filePath })
+                
+                const lines = Object.keys(this.notesData.lines).map(filePath => {
+                    if (this.viewId !== null && filePath !== file) return;
+                
+                    // 🔍 Проверка наличия оповещений
+                    const hasDeadline = this.notesData.lines[filePath].some(note => note?.deadline);
+                
+                    return new NoteItem(
+                        `${hasDeadline ? "📍(🔔)" : "📍"} ${path.basename(filePath)}`,
+                        vscode.TreeItemCollapsibleState.Collapsed,
+                        { count: this.notesData.lines[filePath].length, lineFile: filePath }
+                    );
                 });
-        
+                
                 const allItems = [...items, ...directories, ...files, ...lines];
+                
     
                 // Если список пуст — возвращаем сообщение
                 if (allItems.length === 0) {
@@ -212,7 +247,7 @@ class NotesExplorer {
                     new NoteItem(`📌 Type: ${element.context.type}`, vscode.TreeItemCollapsibleState.None),
                     new NoteItem(`📝 Content: ${element.context.content}`, vscode.TreeItemCollapsibleState.None),
                     new NoteItem(`📅 Created: ${new Date(element.context.createdAt).toLocaleString()}`, vscode.TreeItemCollapsibleState.None),
-                    element.context?.deadline ? new NoteItem(`🔔 Deadline: ${new Date(element.context.deadline).toLocaleString()}`, vscode.TreeItemCollapsibleState.None) : "",
+                    element.context?.deadline ? new NoteItem(`🔔 Deadline: ${formatDeadlineStatus(element.context?.deadline)}`, vscode.TreeItemCollapsibleState.None) : "",
                     ...(element.context.line ? [new NoteItem(`📍 Line: ${element.context.line}`, vscode.TreeItemCollapsibleState.None)] : [])
                 ];
             }
@@ -561,6 +596,31 @@ extractItemData(item, parent = null) {
     
     
 }
+
+function formatDeadlineStatus(deadlineDate) {
+    if (!deadlineDate) return "";
+
+    const deadline = new Date(deadlineDate);
+    const now = new Date();
+    
+    const diffTime = deadline.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    let statusText = "";
+
+    if (diffTime < 0) {
+        statusText = `🔴 Просрочено (${Math.abs(diffDays)} дн. назад)`;
+    } else if (diffDays === 0) {
+        statusText = `🟡 Сегодня!`;
+    } else if (diffDays === 1) {
+        statusText = `🟢 Завтра`;
+    } else {
+        statusText = `🟢 Осталось ${diffDays} дн.`;
+    }
+
+    return `${statusText}: ${deadline.toLocaleString()}`;
+}
+
 function getProgressColor(percent) {
     if (percent <= 30) return "🔴"; // Красный
     if (percent <= 70) return "🟠"; // Оранжевый
