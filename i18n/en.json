@@ -1,0 +1,8 @@
+{
+    "settings.language": {
+        "description": "Select Interface Language"
+    },
+    "settings.noteDisplay": "How to display notes in code",
+    "settings.inlineTextColor": "Inline text color for notes",
+    "settings.highlightColor": "Highlight color for notes"
+}

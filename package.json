@@ -11,29 +11,114 @@
   ],
   "activationEvents": [
     "onStartupFinished",
-    "onDidChangeActiveTextEditor"
+    "onDidChangeActiveTextEditor",
+    "protasker.openNotesExplorer"
   ],
   "main": "./extension.js",
   "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "ProTasker Settings",
+      "properties": {
+        "protasker.language": {
+          "type": "string",
+          "enum": [
+            "en",
+            "ru",
+            "uk"
+          ],
+          "default": "en",
+          "description": "Выбор языка интерфейса"
+        },
+        "protasker.customTypes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Пользовательские типы записей"
+        },
+        "protasker.noteDisplay": {
+          "type": "string",
+          "enum": [
+            "icon",
+            "highlight",
+            "inlineText"
+          ],
+          "default": "icon",
+          "description": "Как отображать заметки в коде"
+        },
+        "protasker.inlineTextColor": {
+          "type": "string",
+          "default": "#FFD700",
+          "description": "Цвет inline-текста заметок",
+          "when": "protasker.noteDisplay == 'inlineText'"
+        },
+        "protasker.highlightColor": {
+          "type": "string",
+          "default": "#ffeb3b",
+          "description": "Цвет подсветки строк"
+        },
+        "protasker.showTimeAgo": {
+          "type": "boolean",
+          "default": true,
+          "description": "Показывать дату заметок в формате time ago"
+        },
+        "protasker.notificatons": {
+          "type": "boolean",
+          "default": true,
+          "description": "Показывать оповещения"
+        }
+      }
+    },
     "viewsContainers": {
-      "activitybar": [{
-        "id": "sidebar_protasker",
-        "title": "ProTasker",
-        "icon": "notes.png"
-      }]
+      "activitybar": [
+        {
+          "id": "sidebar_protasker",
+          "title": "ProTasker",
+          "icon": "notes.png"
+        }
+      ]
     },
     "views": {
-
-      "sidebar_protasker": [{
-        "id": "sidebar_protasker_id1",
-        "name": "Tasks list"
-      }],
-      "explorer": [{
-        "id": "notesExplorer",
-        "name": "Notes Explorer"
-      }]
+      "sidebar_protasker": [
+        {
+          "id": "sidebar_protasker_id1",
+          "name": "Tasks list",
+          "icon": "notes.png"
+        }
+      ],
+      "explorer": [
+        {
+          "id": "notesExplorer",
+          "name": "Notes Explorer",
+          "icon": "notes.png"
+        }
+      ]
     },
     "commands": [
+      {
+        "command": "protasker.openSettings",
+        "title": "ProTasker: Открыть настройки",
+        "category": "ProTasker",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "protasker.addChecklistItem",
+        "title": "➕ Добавить пункт в чек-лист"
+      },
+      {
+        "command": "protasker.toggleChecklistItem",
+        "title": "✅ Отметить как выполненное"
+      },
+      {
+        "command": "protasker.removeChecklistItem",
+        "title": "❌ Удалить пункт чек-листа"
+      },
+      {
+        "command": "protasker.editNoteFromList",
+        "title": "✏️ Edit Note"
+      },
       {
         "command": "protasker.openComment",
         "title": "📜 Open Comment"
@@ -63,13 +148,17 @@
         "title": "🗑️ Delete Note from Line"
       },
       {
+        "command": "protasker.deleteNoteFromList",
+        "title": "🗑️ Delete Checklist"
+      },
+      {
         "command": "protasker.addNote",
         "title": "Add Note",
         "icon": "$(plus)"
       },
       {
         "command": "protasker.addNoteToLine",
-        "title": "Add Note"
+        "title": "📌 Add Note"
       },
       {
         "command": "protasker.filterNotes",
@@ -80,43 +169,59 @@
         "command": "protasker.searchNotes",
         "title": "Search Notes",
         "icon": "$(search)"
+      },
+      {
+        "command": "protasker.resetSearch",
+        "title": "Сбросить поиск"
+      },
+      {
+        "command": "protasker.goToNote",
+        "title": "🔍 Перейти к записи",
+        "category": "ProTasker"
       }
     ],
     "menus": {
-      "editor/context": [{
-        "command": "protasker.openComment",
-        "when": "editorTextFocus",
-        "group": "navigation"
-      },
-      {
-        "command": "protasker.addNoteToLine",
-        "when": "editorTextFocus",
-        "group": "navigation"
-    },
-    {
-      "command": "protasker.editNote",
-      "when": "editorTextFocus",
-      "group": "navigation"
-    },
-    {
-        "command": "protasker.deleteNoteFromLine",
-        "when": "editorTextFocus",
-        "group": "navigation"
-    }],
-      "view/title": [{
+      "editor/context": [
+        {
           "command": "protasker.openComment",
-          "title": "📜 Открыть комментарий"
+          "when": "protasker.openComment",
+          "group": "navigation"
         },
         {
+          "command": "protasker.addNoteToLine",
+          "when": "protasker.addNoteToLine",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.editNote",
+          "when": "protasker.editNote",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.deleteNoteFromLine",
+          "when": "protasker.deleteNoteFromLine",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
           "command": "protasker.addNote",
+          "when": "view == sidebar_protasker_id1 || view == notesExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.openSettings",
+          "when": "view == sidebar_protasker_id1 || view == notesExplorer",
           "group": "navigation"
         },
         {
           "command": "protasker.filterNotes",
+          "when": "view == sidebar_protasker_id1",
           "group": "navigation"
         },
         {
           "command": "protasker.searchNotes",
+          "when": "view == sidebar_protasker_id1",
           "group": "navigation"
         },
         {
@@ -130,14 +235,40 @@
           "group": "navigation"
         }
       ],
-      "view/item/context": [{
-          "command": "protasker.editNote",
-          "when": "viewItem == noteItem",
+      "view/item/context": [
+        {
+          "command": "protasker.addChecklistItem",
+          "when": "viewItem == checklist",
           "group": "navigation"
         },
         {
-          "command": "protasker.deleteNote",
-          "when": "viewItem == noteItem",
+          "command": "protasker.resetSearch",
+          "when": "viewItem == resetSearch",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.toggleChecklistItem",
+          "when": "viewItem == checklistItem",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.removeChecklistItem",
+          "when": "viewItem == checklistItem",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.editNoteFromList",
+          "when": "viewItem == noteItem || viewItem == line",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.deleteNoteFromList",
+          "when": "viewItem == noteItem || viewItem == checklist || viewItem == line",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.goToNote",
+          "when": "viewItem == line",
           "group": "navigation"
         }
       ]
@@ -149,11 +280,15 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.97.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "eslint": "^9.19.0",
+    "@types/vscode": "^1.97.0",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.19.0"
+  },
+  "dependencies": {
+    "node-notifier": "^10.0.1",
+    "timeago.js": "^4.0.2"
   }
 }
