@@ -149,7 +149,7 @@
       },
       {
         "command": "protasker.deleteNoteFromList",
-        "title": "🗑️ Delete Checklist"
+        "title": "🗑️ Delete"
       },
       {
         "command": "protasker.addNote",
@@ -158,7 +158,8 @@
       },
       {
         "command": "protasker.addNoteToLine",
-        "title": "📌 Add Note"
+        "title": "📌 Add Note",
+        "icon": "$(plus)"
       },
       {
         "command": "protasker.filterNotes",
@@ -176,7 +177,7 @@
       },
       {
         "command": "protasker.goToNote",
-        "title": "🔍 Перейти к записи",
+        "title": " Перейти к записи",
         "category": "ProTasker"
       }
     ],
@@ -190,7 +191,8 @@
         {
           "command": "protasker.addNoteToLine",
           "when": "protasker.addNoteToLine",
-          "group": "navigation"
+          "group": "navigation",
+          "icon": "$(plus)"
         },
         {
           "command": "protasker.editNote",
@@ -269,7 +271,8 @@
         {
           "command": "protasker.goToNote",
           "when": "viewItem == line",
-          "group": "navigation"
+          "group": "navigation",
+          "icon": "$(search)"
         }
       ]
     }

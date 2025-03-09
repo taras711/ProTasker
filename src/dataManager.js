@@ -2,9 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const vscode = require('vscode');
 const timeago = require('timeago.js');
+const {Manager} = require("./manager")
 
-class NotesExplorer {
-    constructor() {
+class NotesExplorer extends Manager{
+    constructor(context) {
+        super();
+        this.context = context;
         this.activeDecorationType = null;
         this._onDidChangeTreeData = new vscode.EventEmitter();
         this.onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -69,6 +72,10 @@ class NotesExplorer {
             treeItem.contextValue = "resetSearch"; // ✅ Добавляем contextValue
         }
 
+        //treeItem.iconPath = element.iconPath || new vscode.ThemeIcon('file');
+        
+                element.context?.icon ? treeItem.iconPath = treeItem.iconPath = element.iconPath || new vscode.ThemeIcon(element.context.icon): "undefined";
+
         return treeItem;
     }
 
@@ -78,226 +85,225 @@ class NotesExplorer {
 
         return keys;
     }
-    
 
     async getChildren(element) {
        return await this.mainData(element)
     }
 
-    async mainData(element, viewId = false){
-            this.viewId = viewId || this.viewId;
-            const editor = vscode.window.activeTextEditor;
-            const file = editor ? path.normalize(editor.document.uri.fsPath).replace(/\\/g, "/").toLowerCase() : null;
-            const pathDir = file ? file.slice(0, file.lastIndexOf('/')) : null;
-            console.log("📌 Отображаем ViewId...", this.viewId);
-            if (!element) {
+
+    //         this.viewId = viewId || this.viewId;
+    //         const editor = vscode.window.activeTextEditor;
+    //         const file = editor ? path.normalize(editor.document.uri.fsPath).replace(/\\/g, "/").toLowerCase() : null;
+    //         const pathDir = file ? file.slice(0, file.lastIndexOf('/')) : null;
+    //         console.log("📌 Отображаем ViewId...", this.viewId);
+    //         if (!element) {
     
-                const items = [];
+    //             const items = [];
     
-                if (this.searchResults !== null && this.searchResults.length > 1) {
-                    console.log("📌 Отображаем результаты поиска...", this.searchResults);
+    //             if (this.searchResults !== null && this.searchResults.length > 1) {
+    //                 console.log("📌 Отображаем результаты поиска...", this.searchResults);
                     
-                    return this.searchResults;
-                }
+    //                 return this.searchResults;
+    //             }
                     
-                const directories = Object.keys(this.notesData.directories).map(dirPath => {
-                    const dirData = this.notesData.directories[dirPath];
+    //             const directories = Object.keys(this.notesData.directories).map(dirPath => {
+    //                 const dirData = this.notesData.directories[dirPath];
                     
-                    // 🔍 Проверка наличия оповещений
-                    const hasDeadline = Object.values(dirData)
-                        .filter(Array.isArray)
-                        .flat()
-                        .some(note => note?.deadline);
+    //                 // 🔍 Проверка наличия оповещений
+    //                 const hasDeadline = Object.values(dirData)
+    //                     .filter(Array.isArray)
+    //                     .flat()
+    //                     .some(note => note?.deadline);
                     
-                    const totalRecords = Object.values(dirData)
-                        .filter(Array.isArray)
-                        .reduce((sum, category) => sum + category.length, 0);
+    //                 const totalRecords = Object.values(dirData)
+    //                     .filter(Array.isArray)
+    //                     .reduce((sum, category) => sum + category.length, 0);
                 
-                    if (this.viewId !== null && dirPath !== pathDir) return;
+    //                 if (this.viewId !== null && dirPath !== pathDir) return;
                 
-                    return new NoteItem(
-                        `${hasDeadline ? "📁(🔔)" : "📁"} ${path.basename(dirPath)}`,
-                        vscode.TreeItemCollapsibleState.Collapsed,
-                        { count: totalRecords, directory: dirPath, prov: "file", contextValue: "directory" }
-                    );
-                });
+    //                 return new NoteItem(
+    //                     `${hasDeadline ? "📁(🔔)" : "📁"} ${path.basename(dirPath)}`,
+    //                     vscode.TreeItemCollapsibleState.Collapsed,
+    //                     { count: totalRecords, directory: dirPath, prov: "file", contextValue: "directory" }
+    //                 );
+    //             });
                 
-                const files = Object.keys(this.notesData.files).map(filePath => {
-                    const fileData = this.notesData.files[filePath];
+    //             const files = Object.keys(this.notesData.files).map(filePath => {
+    //                 const fileData = this.notesData.files[filePath];
                 
-                    // 🔍 Проверка наличия оповещений
-                    const hasDeadline = Object.values(fileData)
-                        .filter(Array.isArray)
-                        .flat()
-                        .some(note => note?.deadline);
+    //                 // 🔍 Проверка наличия оповещений
+    //                 const hasDeadline = Object.values(fileData)
+    //                     .filter(Array.isArray)
+    //                     .flat()
+    //                     .some(note => note?.deadline);
                 
-                    const totalRecords = Object.values(fileData)
-                        .filter(Array.isArray)
-                        .reduce((sum, category) => sum + category.length, 0);
+    //                 const totalRecords = Object.values(fileData)
+    //                     .filter(Array.isArray)
+    //                     .reduce((sum, category) => sum + category.length, 0);
                 
-                    if (this.viewId !== null && filePath !== file) return;
+    //                 if (this.viewId !== null && filePath !== file) return;
                 
-                    return new NoteItem(
-                        `${hasDeadline ? "📄(🔔)" : "📄"} ${path.basename(filePath)}`,
-                        vscode.TreeItemCollapsibleState.Collapsed,
-                        { count: totalRecords, file: filePath, prov: "directories", contextValue: "file" }
-                    );
-                });
+    //                 return new NoteItem(
+    //                     `${hasDeadline ? "📄(🔔)" : "📄"} ${path.basename(filePath)}`,
+    //                     vscode.TreeItemCollapsibleState.Collapsed,
+    //                     { count: totalRecords, file: filePath, prov: "directories", contextValue: "file" }
+    //                 );
+    //             });
                 
-                const lines = Object.keys(this.notesData.lines).map(filePath => {
-                    if (this.viewId !== null && filePath !== file) return;
+    //             const lines = Object.keys(this.notesData.lines).map(filePath => {
+    //                 if (this.viewId !== null && filePath !== file) return;
                 
-                    // 🔍 Проверка наличия оповещений
-                    const hasDeadline = this.notesData.lines[filePath].some(note => note?.deadline);
+    //                 // 🔍 Проверка наличия оповещений
+    //                 const hasDeadline = this.notesData.lines[filePath].some(note => note?.deadline);
                 
-                    return new NoteItem(
-                        `${hasDeadline ? "📍(🔔)" : "📍"} ${path.basename(filePath)}`,
-                        vscode.TreeItemCollapsibleState.Collapsed,
-                        { count: this.notesData.lines[filePath].length, lineFile: filePath }
-                    );
-                });
+    //                 return new NoteItem(
+    //                     `${hasDeadline ? "📍(🔔)" : "📍"} ${path.basename(filePath)}`,
+    //                     vscode.TreeItemCollapsibleState.Collapsed,
+    //                     { count: this.notesData.lines[filePath].length, lineFile: filePath }
+    //                 );
+    //             });
                 
-                const allItems = [...items, ...directories, ...files, ...lines];
+    //             const allItems = [...items, ...directories, ...files, ...lines];
                 
     
-                // Если список пуст — возвращаем сообщение
-                if (allItems.length === 0) {
-                    return [new NoteItem("📭 Нет записей", vscode.TreeItemCollapsibleState.None)];
-                }
+    //             // Если список пуст — возвращаем сообщение
+    //             if (allItems.length === 0) {
+    //                 return [new NoteItem("📭 Нет записей", vscode.TreeItemCollapsibleState.None)];
+    //             }
     
-                return allItems;
-            }
+    //             return allItems;
+    //         }
         
-            // Если это директория - показываем записи в ней
-            if (element.context.directory) {
-                const dirPath =  this.notesData.directories[element.context.directory] || {};
+    //         // Если это директория - показываем записи в ней
+    //         if (element.context.directory) {
+    //             const dirPath =  this.notesData.directories[element.context.directory] || {};
         
-                return Object.entries(dirPath)
-                    .flatMap(([type, notes]) => 
-                        (Array.isArray(notes) ? notes : []).map(note => {
-                            note.prov = "directories";
-                            const label = note.type === 'checklist' 
-                                ? `📋 ${note.content.name || 'Чек-лист'}`
-                                : `${note.type.toUpperCase()}: ${note.content}`;
+    //             return Object.entries(dirPath)
+    //                 .flatMap(([type, notes]) => 
+    //                     (Array.isArray(notes) ? notes : []).map(note => {
+    //                         note.prov = "directories";
+    //                         const label = note.type === 'checklist' 
+    //                             ? `📋 ${note.content.name || 'Чек-лист'}`
+    //                             : `${note.type.toUpperCase()}: ${note.content}`;
                             
-                            return new NoteItem(label, 
-                                note.type === 'checklist' ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Collapsed, 
-                                { ...note, contextValue: note.type === 'checklist' ? 'checklist' : "noteItem", dirpath: element.context.directory }
-                            );
-                        })
-                    );
-            }
+    //                         return new NoteItem(label, 
+    //                             note.type === 'checklist' ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Collapsed, 
+    //                             { ...note, contextValue: note.type === 'checklist' ? 'checklist' : "noteItem", dirpath: element.context.directory }
+    //                         );
+    //                     })
+    //                 );
+    //         }
         
-            // Если это файл - показываем записи в нем
-            if (element.context.file) {
-                const fileNotes = this.notesData.files[element.context.file] || {};
+    //         // Если это файл - показываем записи в нем
+    //         if (element.context.file) {
+    //             const fileNotes = this.notesData.files[element.context.file] || {};
     
-                return Object.entries(fileNotes)
-                    .flatMap(([type, notes]) => 
-                        (Array.isArray(notes) ? notes : []).map(note => {
-                            const totalItems = note.type == "checklist" ? note.content.items.length : null;
-                            const completedItems = note.type == "checklist" ? note.content.items.filter(item => item.done).length : null;
-                            const progress = note.type == "checklist" ? totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0 : null;
-                            const color = note.type == "checklist" ? getProgressColor(progress) : null;
-                            note.prov = "files";
-                            const label = note.type === 'checklist' 
-                                ? `📋 ${note.content.name} (${totalItems}, ${color} ${progress}%)` || 'Checklist'
-                                : `${note.type.toUpperCase()}: ${note.content}`;
+    //             return Object.entries(fileNotes)
+    //                 .flatMap(([type, notes]) => 
+    //                     (Array.isArray(notes) ? notes : []).map(note => {
+    //                         const totalItems = note.type == "checklist" ? note.content.items.length : null;
+    //                         const completedItems = note.type == "checklist" ? note.content.items.filter(item => item.done).length : null;
+    //                         const progress = note.type == "checklist" ? totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0 : null;
+    //                         const color = note.type == "checklist" ? getProgressColor(progress) : null;
+    //                         note.prov = "files";
+    //                         const label = note.type === 'checklist' 
+    //                             ? `📋 ${note.content.name} (${totalItems}, ${color} ${progress}%)` || 'Checklist'
+    //                             : `${note.type.toUpperCase()}: ${note.content}`;
                             
-                            return new NoteItem(label, 
-                                note.type === 'checklist' ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Collapsed, 
-                                { ...note, contextValue: note.type === 'checklist' ? "checklist" : "noteItem", filepath: element.context.file}
-                            );
-                        })
-                    );
-            }
+    //                         return new NoteItem(label, 
+    //                             note.type === 'checklist' ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Collapsed, 
+    //                             { ...note, contextValue: note.type === 'checklist' ? "checklist" : "noteItem", filepath: element.context.file}
+    //                         );
+    //                     })
+    //                 );
+    //         }
         
-            // Если это строка файла - показываем записи
-            if (element.context.lineFile) {
-                const filePath = element.context.lineFile;
+    //         // Если это строка файла - показываем записи
+    //         if (element.context.lineFile) {
+    //             const filePath = element.context.lineFile;
                 
-                return this.notesData.lines[filePath].map(note =>
-                    new NoteItem(`📍 Line ${note.line}: ${note.content}`, vscode.TreeItemCollapsibleState.Collapsed, { ...note, prov: "lines", path: filePath,  contextValue: "line", linepath: filePath})
-                );
-            }
+    //             return this.notesData.lines[filePath].map(note =>
+    //                 new NoteItem(`📍 Line ${note.line}: ${note.content}`, vscode.TreeItemCollapsibleState.Collapsed, { ...note, prov: "lines", path: filePath,  contextValue: "line", linepath: filePath})
+    //             );
+    //         }
     
-            // ✅ Если элемент — чек-лист, возвращаем его пункты
-            if (element.context.type === 'checklist') {
-                if (!element.context.content || !element.context.content.items || !Array.isArray(element.context.content.items)) {
-                    console.error("❌ Ошибка: у чек-листа нет массива items", element.context);
-                    return [new NoteItem("📭 Нет пунктов в чек-листе", vscode.TreeItemCollapsibleState.None)];
-                }
-                console.log("Checklists",element)
-                const filePath = element.context.prov;
+    //         // ✅ Если элемент — чек-лист, возвращаем его пункты
+    //         if (element.context.type === 'checklist') {
+    //             if (!element.context.content || !element.context.content.items || !Array.isArray(element.context.content.items)) {
+    //                 console.error("❌ Ошибка: у чек-листа нет массива items", element.context);
+    //                 return [new NoteItem("📭 Нет пунктов в чек-листе", vscode.TreeItemCollapsibleState.None)];
+    //             }
+    //             console.log("Checklists",element)
+    //             const filePath = element.context.prov;
             
-                return element.context.content.items.map((item, index) => 
-                    new NoteItem(
-                        item.done ? `✅ ${item.text}` : `⬜ ${item.text}`,
-                        vscode.TreeItemCollapsibleState.None,
-                        { ...item, prov: "directories", path: filePath, checklistId: element.context.id, index, type: element.context.type, contextValue: "checklistItem" }
-                    )
-                );
-            }
+    //             return element.context.content.items.map((item, index) => 
+    //                 new NoteItem(
+    //                     item.done ? `✅ ${item.text}` : `⬜ ${item.text}`,
+    //                     vscode.TreeItemCollapsibleState.None,
+    //                     { ...item, prov: "directories", path: filePath, checklistId: element.context.id, index, type: element.context.type, contextValue: "checklistItem" }
+    //                 )
+    //             );
+    //         }
             
         
-            // Если это заметка/комментарий - показываем детали
-            if (element.context.id) {
-                return [
-                    new NoteItem(`🆔 ID: ${element.context.id}`, vscode.TreeItemCollapsibleState.None),
-                    new NoteItem(`📌 Type: ${element.context.type}`, vscode.TreeItemCollapsibleState.None),
-                    new NoteItem(`📝 Content: ${element.context.content}`, vscode.TreeItemCollapsibleState.None),
-                    new NoteItem(`📅 Created: ${new Date(element.context.createdAt).toLocaleString()}`, vscode.TreeItemCollapsibleState.None),
-                    element.context?.deadline ? new NoteItem(`🔔 Deadline: ${formatDeadlineStatus(element.context?.deadline)}`, vscode.TreeItemCollapsibleState.None) : "",
-                    ...(element.context.line ? [new NoteItem(`📍 Line: ${element.context.line}`, vscode.TreeItemCollapsibleState.None)] : [])
-                ];
-            }
+    //         // Если это заметка/комментарий - показываем детали
+    //         if (element.context.id) {
+    //             return [
+    //                 new NoteItem(`🆔 ID: ${element.context.id}`, vscode.TreeItemCollapsibleState.None),
+    //                 new NoteItem(`📌 Type: ${element.context.type}`, vscode.TreeItemCollapsibleState.None),
+    //                 new NoteItem(`📝 Content: ${element.context.content}`, vscode.TreeItemCollapsibleState.None),
+    //                 new NoteItem(`📅 Created: ${new Date(element.context.createdAt).toLocaleString()}`, vscode.TreeItemCollapsibleState.None),
+    //                 element.context?.deadline ? new NoteItem(`🔔 Deadline: ${formatDeadlineStatus(element.context?.deadline)}`, vscode.TreeItemCollapsibleState.None) : "",
+    //                 ...(element.context.line ? [new NoteItem(`📍 Line: ${element.context.line}`, vscode.TreeItemCollapsibleState.None)] : [])
+    //             ];
+    //         }
     
-             // Если у элемента нет дочерних элементов, показываем "Нет записей"
-            // if (children.length === 0) {
-            //     return [new NoteItem("📭 Нет записей", vscode.TreeItemCollapsibleState.None)];
-            // }
+    //          // Если у элемента нет дочерних элементов, показываем "Нет записей"
+    //         // if (children.length === 0) {
+    //         //     return [new NoteItem("📭 Нет записей", vscode.TreeItemCollapsibleState.None)];
+    //         // }
         
-            return []; // 🛑 Если элемент не распознан, возвращаем пустой массив
+    //         return []; // 🛑 Если элемент не распознан, возвращаем пустой массив
         
-    }
+    // }
     
     
 // Функция для отображения значков файлов с заметками
-getFileLabel(filePath) {
-    const hasNotes = this.notesData.files[filePath]?.notes.length > 0;
-    const hasComments = Object.keys(this.notesData.files[filePath]?.lines || {}).length > 0;
-    return `${hasNotes || hasComments ? '📝 ' : ''}${path.basename(filePath)}`;
-}
+    getFileLabel(filePath) {
+        const hasNotes = this.notesData.files[filePath]?.notes.length > 0;
+        const hasComments = Object.keys(this.notesData.files[filePath]?.lines || {}).length > 0;
+        return `${hasNotes || hasComments ? '📝 ' : ''}${path.basename(filePath)}`;
+    }
 
-    // Функция для папок
-getDirectoryLabel(directoryPath) {
-    const hasNotes = this.notesData.directories[directoryPath]?.notes.length > 0;
-    return `${hasNotes ? '📂📝 ' : '📂 '}${path.basename(directoryPath)}`;
-}
+        // Функция для папок
+    getDirectoryLabel(directoryPath) {
+        const hasNotes = this.notesData.directories[directoryPath]?.notes.length > 0;
+        return `${hasNotes ? '📂📝 ' : '📂 '}${path.basename(directoryPath)}`;
+    }
 
-    // Вспомогательная функция для извлечения всех данных (заметки, комментарии, чеклисты и события) для объекта
-extractItemData(item, parent = null) {
-    const allCategories = ['notes', 'comments', 'checklists', 'events']; // Все возможные категории данных
-    const extractedData = [];
+        // Вспомогательная функция для извлечения всех данных (заметки, комментарии, чеклисты и события) для объекта
+    extractItemData(item, parent = null) {
+        const allCategories = ['notes', 'comments', 'checklists', 'events']; // Все возможные категории данных
+        const extractedData = [];
 
-    // Для каждой категории данных (заметки, комментарии и т.д.)
-    allCategories.forEach(category => {
-        if (item[category] && item[category].length > 0) {
-            item[category].forEach(entry => {
-                extractedData.push({
-                    label: `${category.slice(0, 1).toUpperCase()}${category.slice(1)}: ${entry.content}`, // Заголовок категории
-                    type: category.slice(0, -1), // Тип записи, например: "note", "comment", и т.д.
-                    id: entry.id,
-                    content: entry.content,
-                    createdAt: entry.createdAt || new Date().toISOString(),
-                    parent: parent ? parent.path : null, // Если есть родитель, передаем его путь
+        // Для каждой категории данных (заметки, комментарии и т.д.)
+        allCategories.forEach(category => {
+            if (item[category] && item[category].length > 0) {
+                item[category].forEach(entry => {
+                    extractedData.push({
+                        label: `${category.slice(0, 1).toUpperCase()}${category.slice(1)}: ${entry.content}`, // Заголовок категории
+                        type: category.slice(0, -1), // Тип записи, например: "note", "comment", и т.д.
+                        id: entry.id,
+                        content: entry.content,
+                        createdAt: entry.createdAt || new Date().toISOString(),
+                        parent: parent ? parent.path : null, // Если есть родитель, передаем его путь
+                    });
                 });
-            });
-        }
-    });
+            }
+        });
 
-    return extractedData;
-}
+        return extractedData;
+    }
 
     getEntries(target, parentPath) {
         if (!target) return [];
@@ -343,7 +349,7 @@ extractItemData(item, parent = null) {
                         data[category].forEach(note => {
                             if (typeof note.content === "string" && note.content.toLowerCase().includes(query)) {
                                 console.log(`✅ Найдена запись: ${note.content}`);  // Добавим логирование
-                                results.push(new NoteItem(
+                                results.push(new this.noteItem(
                                     `🔍 ${category.toUpperCase()}: ${note.content}`,
                                     vscode.TreeItemCollapsibleState.None,
                                     { ...note, parentPath, contextValue: "noteItem" }
@@ -355,7 +361,7 @@ extractItemData(item, parent = null) {
                                 note.content.items.forEach(item => {
                                     if (item.text.toLowerCase().includes(query)) {
                                         console.log(`✅ Найден пункт чеклиста: ${item.text}`);
-                                        results.push(new NoteItem(
+                                        results.push(new this.noteItem(
                                             `🔍 CHECKLIST: ${note.content.name} → ${item.text}`,
                                             vscode.TreeItemCollapsibleState.None,
                                             { ...item, checklistId: note.id, index: note.content.items.indexOf(item), parentPath, contextValue: "checklistItem" }
@@ -376,7 +382,7 @@ extractItemData(item, parent = null) {
             notes.forEach(note => {
                 if (typeof note.content === "string" && note.content.toLowerCase().includes(query)) {
                     console.log(`✅ Найдена строка: ${note.content}`);
-                    results.push(new NoteItem(
+                    results.push(new this.noteItem(
                         `🔍 LINE ${note.line}: ${note.content}`,
                         vscode.TreeItemCollapsibleState.None,
                         { ...note, parentPath: path, contextValue: "noteItem" }
@@ -385,7 +391,7 @@ extractItemData(item, parent = null) {
             });
         });
     
-        results.push(new NoteItem(
+        results.push(new this.noteItem(
             "❌ Сбросить поиск", 
             vscode.TreeItemCollapsibleState.None, 
             { contextValue: "resetSearch" }
@@ -401,7 +407,6 @@ extractItemData(item, parent = null) {
         this.search = true;
         this.refresh();  // Обновляем TreeView с результатами поиска
     }
-    
     
     filterNotes(type, category) {
         const results = [];
@@ -450,7 +455,7 @@ extractItemData(item, parent = null) {
                     const filteredItems = filterByType(data);
                     if (filteredItems.length > 0) {
                         if (!results.some(item => item.contextValue === "lineContainer" && item.label === `📍 ${path.basename(dataPath)}`)) {
-                            results.push(new NoteItem(
+                            results.push(new this.noteItem(
                                 `📍 ${path.basename(dataPath)}`,
                                 vscode.TreeItemCollapsibleState.None,
                                 { lineFile: dataPath, contextValue: "lineContainer" }
@@ -458,7 +463,7 @@ extractItemData(item, parent = null) {
                         }
     
                         filteredItems.forEach(note => {
-                            results.push(new NoteItem(
+                            results.push(new this.noteItem(
                                 `📝 LINE ${note.line}: ${note.content}`,
                                 vscode.TreeItemCollapsibleState.Collapsed, // Теперь запись может раскрываться
                                 { ...note, parentPath: dataPath, contextValue: "noteItem" }
@@ -475,7 +480,7 @@ extractItemData(item, parent = null) {
                 const filteredItems = filterByType(data[categoryKey]);
                 if (filteredItems.length > 0) {
                     if (!results.some(item => item.contextValue === "directory" && item.label === `📁 ${path.basename(dataPath)}`)) {
-                        results.push(new NoteItem(
+                        results.push(new this.noteItem(
                             `📁 ${path.basename(dataPath)}`,
                             vscode.TreeItemCollapsibleState.None,
                             { directory: dataPath, contextValue: "directory" }
@@ -483,7 +488,7 @@ extractItemData(item, parent = null) {
                     }
     
                     filteredItems.forEach(note => {
-                        results.push(new NoteItem(
+                        results.push(new this.noteItem(
                             `${categoryKey.toUpperCase()}: ${note.content}`,
                             vscode.TreeItemCollapsibleState.Collapsed, // Теперь запись разворачивается
                             { ...note, parentPath: dataPath, contextValue: "noteItem" }
@@ -494,7 +499,7 @@ extractItemData(item, parent = null) {
         });
 
         // **Добавляем кнопку "Сбросить фильтр"** 
-        results.push(new NoteItem(
+        results.push(new this.noteItem(
             "❌ Сбросить фильтр",
             vscode.TreeItemCollapsibleState.None,
             { contextValue: "resetSearch" }
@@ -503,13 +508,11 @@ extractItemData(item, parent = null) {
         return results;
     }
 
-
     clearSearch() {
         this.search = false;
         this.searchResults = null;
         this.refresh();
     }
-    
 
     async addNoteToFile(filePath, content, type = "note") {
         if (!this.notesData.files[filePath]) {
@@ -557,7 +560,6 @@ extractItemData(item, parent = null) {
         return path.normalize(filePath).replace(/\\/g, "/").toLowerCase();
     }
     
-
     refresh() {
         console.log("✅ DEBUG: TreeView обновляется...");
         this._onDidChangeTreeData.fire();
@@ -565,7 +567,8 @@ extractItemData(item, parent = null) {
 
     async addEntry(targetPath, isDirectory = false, entryType, noteContent, deadline = "false") {
         const typeKey = entryType.toLowerCase() + "s"; // Пример: "notes", "comments", "checklists", "events"
-    
+        
+        
         // Добавляем тип записи в файл или папку
         let target;
         targetPath = this.normalizePath(targetPath)
@@ -580,6 +583,8 @@ extractItemData(item, parent = null) {
             }
             target = this.notesData.files[targetPath];
         }
+
+        if(!target?.[typeKey]) target[typeKey] = []
     
         // Добавляем запись
         target[typeKey].push({
@@ -592,104 +597,6 @@ extractItemData(item, parent = null) {
     
         await this.saveNotesToFile();
     }
-    
-    
-    
-}
-
-function formatDeadlineStatus(deadlineDate) {
-    if (!deadlineDate) return "";
-
-    const deadline = new Date(deadlineDate);
-    const now = new Date();
-    
-    const diffTime = deadline.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    let statusText = "";
-
-    if (diffTime < 0) {
-        statusText = `🔴 Просрочено (${Math.abs(diffDays)} дн. назад)`;
-    } else if (diffDays === 0) {
-        statusText = `🟡 Сегодня!`;
-    } else if (diffDays === 1) {
-        statusText = `🟢 Завтра`;
-    } else {
-        statusText = `🟢 Осталось ${diffDays} дн.`;
-    }
-
-    return `${statusText}: ${deadline.toLocaleString()}`;
-}
-
-function getProgressColor(percent) {
-    if (percent <= 30) return "🔴"; // Красный
-    if (percent <= 70) return "🟠"; // Оранжевый
-    return "🟢"; // Зеленый
-}
-class NoteItem extends vscode.TreeItem {
-    constructor(label, collapsibleState, context = {}) {
-        const settings = getProTaskerSettings()
-        let converToTimeago = context?.createdAt ? new Date(context.createdAt).toLocaleString() : "", description = "";
-        super(label, collapsibleState);
-        this.context = context;
-        this.tooltip = context.content || label;
-        this.notifiedDeadlines = new Set();
-        
-        this.contextValue = this.context.contextValue || context.type || "unknown";
-        this.dirpath = this.context.dirpath || null
-        this.filepath = this.context.filepath || null
-        this.linepath = this.context.linepath || null
-        if(context.createdAt){
-            if(settings.showTimeAgo) converToTimeago = timeago.format(new Date(context.createdAt)) || ""
-        }
-
-        description = context?.count ? `(${context.count})` : (`${context.type ? `(${context.type})` : ""} ${converToTimeago}`)
-        
-        this.description = description;
-
-        console.log(`📌 NoteItem создан: ${this.label}, contextValue: ${this.contextValue}`);
-
-        if(settings.notificatons){
-            if (context?.deadline) {
-                const notifiedDeadlines = this.notifiedDeadlines;
-                const deadline = new Date(context.deadline);
-                const now = new Date().getTime();
-                const diff = deadline.getTime() - now;
-
-                if (diff < 3600000 && diff > 0 && !notifiedDeadlines.has(context.id)) {
-                    this.iconPath = new vscode.ThemeIcon("clock", new vscode.ThemeColor("notificationsWarningIcon.foreground"));
-                    notifiedDeadlines.add(context.id); // Помечаем как уведомлённое
-                } else if (diff <= 0 && !notifiedDeadlines.has(context.id)) {
-                    this.iconPath = new vscode.ThemeIcon("error", new vscode.ThemeColor("notificationsErrorIcon.foreground"));
-                    notifiedDeadlines.add(context.id);
-                } else {
-                    this.iconPath = new vscode.ThemeIcon("note");
-                }
-            }
-        }
-    }
-}
-
-// class SettingsItem extends vscode.TreeItem {
-//     constructor(){
-//         super()
-//     }
-// }
-function playSound( soundLink ) {
-    vscode.env.openExternal(soundLink);
-}
-function getProTaskerSettings(){
-    const config = vscode.workspace.getConfiguration('protasker');
-
-    return {
-        language: config.get('language'),
-        customTypes: config.get('customTypes'),
-        noteDisplay: config.get('noteDisplay'),
-        highlightColor: config.get('highlightColor'),
-        showTimeAgo: config.get('showTimeAgo'),
-        notificatons: config.get('notificatons')
-    }
-
 }
 
 module.exports = { NotesExplorer };

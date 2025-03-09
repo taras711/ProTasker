@@ -9,8 +9,8 @@ const path = require("path")
 const notifiedDeadlines = new Set();
 function activate(context) {
     console.log('ProTasker extension activated');
-    const provider = new NotesExplorer();
-    const notesExplorerProvider = new NotesExplorerProvider(provider.notesData);
+    const provider = new NotesExplorer(context);
+    const notesExplorerProvider = new NotesExplorerProvider(provider.notesData, context);
     //const notesExplorerProvider = new Manager("notesExplorer");
 
     const treeView = vscode.window.registerTreeDataProvider('sidebar_protasker_id1', provider);
@@ -146,11 +146,6 @@ function activate(context) {
         });
     
         if (!selection) return;
-
-        // 2️⃣ Запрашиваем место хранения
-        const name = await vscode.window.showInputBox({placeHolder: 'Checklist name'});
-
-        if (!name) return;
         
         // 4️⃣ Если это чек-лист или событие, спрашиваем про дедлайн
         if (entryType === 'Checklist' || entryType === 'Event') {
@@ -173,12 +168,19 @@ function activate(context) {
         }
 
         let filePath = await getTargetPath(selection);
-        if (!filePath) return;
+        if (!filePath){  
+            vscode.window.showErrorMessage("No active editor.");
+            return
+        };
     
         // 3️⃣ Если это чек-лист, запрашиваем пункты
         if (entryType === 'Checklist') {
             let checklistItems = [];
             let addMore = true;
+
+            const name = await vscode.window.showInputBox({placeHolder: 'Checklist name'});
+
+            if (!name) return;
     
             while (addMore) {
                 const item = await vscode.window.showInputBox({ placeHolder: 'Введите пункт чек-листа (оставьте пустым для завершения)' });
@@ -214,6 +216,8 @@ function activate(context) {
                 await provider.addNoteToLine(filePath, lineNumber, entryType.toLowerCase(), noteContent);
             }
         }
+        provider.refresh();
+        notesExplorerProvider.refresh();
     
         highlightCommentedLines(editor, provider);
     }));
@@ -409,8 +413,11 @@ function activate(context) {
 
         target.notes.splice(noteIndex, 1);
         await provider.saveNotesToFile();
-        provider.refresh();
+        
         highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
+        provider.refresh();
+        notesExplorerProvider.refresh();
+        
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("protasker.openComment", async () => {
@@ -516,7 +523,7 @@ function activate(context) {
                     decoration.renderOptions.backgroundColor = settings.highlightColor;
                     decoration.renderOptions.after = {
                         contentText:  `// ${tooltipText}`,
-                        color: "lightgray",
+                        color: settings.inlineTextColor || " #03a9f4",
                         fontSize: "12px",
                         backgroundColor: settings.highlightColor,
                         margin: "0 0 0 5px",
@@ -825,21 +832,30 @@ function activate(context) {
     }));
     
     vscode.commands.registerCommand("protasker.goToNote", async (note) => {
-        console.log("Note: ", note)
         if (!note || !note.context.path || typeof note.context.line !== "number") {
             vscode.window.showErrorMessage("Ошибка: не удалось найти привязанную строку.");
             return;
         }
     
         const fileUri = vscode.Uri.file(note.context.path);
-        const document = await vscode.workspace.openTextDocument(fileUri);
-        const editor = await vscode.window.showTextDocument(document);
     
-        // Перелистываем к нужной строке
-        const position = new vscode.Position(note.context.line- 1, 0);
-        const range = new vscode.Range(position, position);
-        editor.selection = new vscode.Selection(position, position);
-        editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+        try {
+            // Проверяем, существует ли файл
+            await vscode.workspace.fs.stat(fileUri); // Если файла нет, бросит ошибку
+            
+            // Если файл найден, открываем его
+            const document = await vscode.workspace.openTextDocument(fileUri);
+            const editor = await vscode.window.showTextDocument(document);
+    
+            // Перелистываем к нужной строке
+            const position = new vscode.Position(note.context.line - 1, 0);
+            const range = new vscode.Range(position, position);
+            editor.selection = new vscode.Selection(position, position);
+            editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+        } catch (error) {
+            // Если файл не найден или произошла ошибка, показываем сообщение
+            vscode.window.showErrorMessage(`Файл не найден: ${fileUri.fsPath}`);
+        }
     });
     
     
