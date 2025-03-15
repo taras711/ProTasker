@@ -771,22 +771,28 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('protasker.resetSearch', async () => {
         console.log("🔄 Сброс поиска...");
         provider.search = false;
+        provider.filteredNotes = null;
         provider.searchResults = null;  // Очищаем результаты поиска
         provider.refresh();  // Обновляем UI
-    
-        vscode.window.showInformationMessage("🔍 Поиск сброшен, отображаются все записи.");
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('protasker.filterNotes', async () => {
+        const settings = getProTaskerSettings();
+        const customTypes = [];
+        settings.customTypes.map(note => {
+            customTypes.push({label: note, description: `Filter by ${note} only`})
+        })
+        console.log(settings.customTypes)
         // Выбор типа для фильтрации
         const filterType = await vscode.window.showQuickPick(
             [
-                { label: 'All', description: 'Show all notes, comments, checklists, events' },
+                { label: 'All', description: 'Show all notes, comments, checklists, events, ...' },
                 { label: 'Notes', description: 'Filter by notes only' },
                 { label: 'Comments', description: 'Filter by comments only' },
                 { label: 'Checklists', description: 'Filter by checklists only' },
                 { label: 'Events', description: 'Filter by events only' },
-                { label: 'Line', description: 'Filter by events only' }
+                { label: 'Line', description: 'Filter by events only' },
+                ...customTypes
             ],
             { placeHolder: 'Select a type to filter' }
         );
@@ -812,16 +818,17 @@ function activate(context) {
         console.log(`🔍 Фильтруем по типу: ${queryType}, категории: ${queryCategory}`);
     
         // Применяем фильтрацию по типу и категории
-        const filteredResults = provider.filterNotes(queryType, queryCategory);
-    
+        provider.filterNotes(queryType, queryCategory);
+        const filteredResults = await provider.filteredNotes
         console.log(`🔹 Найдено результатов: ${filteredResults.length}`);
         if (filteredResults.length === 0) {
             vscode.window.showInformationMessage("😕 Ничего не найдено по запросу.");
         }
     
         // Обновление TreeView с результатами фильтрации
-        provider.searchResults = filteredResults;
+        //provider.searchResults = filteredResults;
         provider.refresh();  // Обновляем интерфейс
+    
     }));
     
     context.subscriptions.push(vscode.commands.registerCommand('protasker.resetFilter', () => {
@@ -857,8 +864,64 @@ function activate(context) {
             vscode.window.showErrorMessage(`Файл не найден: ${fileUri.fsPath}`);
         }
     });
+
+    vscode.commands.registerCommand("protasker.goToFile", async (note) => {
+        if (!note || !note.filepath ) {
+            vscode.window.showErrorMessage("Ошибка: не удалось найти файл.");
+            return;
+        }
     
+        const fileUri = vscode.Uri.file(note.filepath );
+
+        // Проверяем, существует ли файл
+        await vscode.workspace.fs.stat(fileUri); // Если файла нет, бросит ошибку
+
+        const document = await vscode.workspace.openTextDocument(fileUri);
+        await vscode.window.showTextDocument(document);
+    })
     
+    vscode.commands.registerCommand("protasker.deleteAll", async (note) => {
+        const editor = vscode.window.activeTextEditor;
+        let type = null;
+        let path = null;
+
+        switch(note.context.contextValue){
+            case "lines":
+                type = "lines";
+                path = note.context.lineFile;
+            break;
+            case "file":
+                type = "files";
+                path = note.context.file;
+            break;
+            case "directory":
+                type = "directories";
+                path = note.context.directory;
+            break;
+        }
+
+        if(type && path){
+            const confirm = await vscode.window.showWarningMessage(`Удалить все записи с ${note.label}?`, "Да", "Нет");
+            if (confirm !== "Да") return;
+
+            const isDirectory = provider.notesData[type][path] !== undefined;
+            const target = provider.notesData[type][path];
+            
+            if (!isDirectory || target.length == 0) {
+                console.error("Ошибка: нет заметок в файле/директории", path);
+                return;
+            }
+
+            if(delete provider.notesData[type][path]) vscode.window.showInformationMessage(`Clear ${note.label} success.`);
+            else { vscode.window.showErrorMessage(`Clear ${note.label} failed. Try again letter.`); return;};
+
+            await provider.saveNotesToFile();
+        
+            highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
+            provider.refresh();
+            notesExplorerProvider.refresh();
+        }
+    })
 
     // const addNoteButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     // addNoteButton.text = '$(plus) Add Note';

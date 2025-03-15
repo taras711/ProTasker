@@ -6,7 +6,8 @@ class Manager{
     constructor(data,  viewId) {
         this.viewId = viewId;
         this.notesData = data;
-        this.searchResults = null
+        this.searchResults = null;
+        this.filteredNotes = null;
         this.noteItem = NoteItem;
         this.context = null;
     }
@@ -16,7 +17,6 @@ class Manager{
                 const pathDir = file ? file.slice(0, file.lastIndexOf('/')) : null;
                 console.log("📌 Отображаем ViewId...", this.viewId);
                 if (!element) {
-        
                     const items = [];
         
                     if (this.searchResults !== null && this.searchResults.length > 1) {
@@ -25,7 +25,11 @@ class Manager{
                         return this.searchResults;
                     }
                         
-                    const directories = Object.keys(this.notesData.directories).map(dirPath => {
+                    const directories = Object.keys(this.notesData.directories)
+                    .filter(dirPath => 
+                        !this.filteredNotes || this.filteredNotes.some(item => item.parentPath === dirPath && item.type !== "line")
+                    )
+                    .map(dirPath => {
                         const dirData = this.notesData.directories[dirPath];
                         
                         // 🔍 Проверка наличия оповещений
@@ -47,7 +51,11 @@ class Manager{
                         );
                     });
                     
-                    const files = Object.keys(this.notesData.files).map(filePath => {
+                    const files = Object.keys(this.notesData.files)
+                    .filter(filePath => 
+                        !this.filteredNotes || this.filteredNotes.some(item => item.parentPath === filePath && item.type !== "line")
+                    )
+                    .map(filePath => {
                         const fileData = this.notesData.files[filePath];
                     
                         // 🔍 Проверка наличия оповещений
@@ -68,8 +76,14 @@ class Manager{
                             { count: totalRecords, file: filePath, prov: "directories", contextValue: "file", icon: "file"}
                         );
                     });
+
+                    console.log("📌 Отображаем результаты поиска lines...", this.filteredNotes);
                     
-                    const lines = Object.keys(this.notesData.lines).map(filePath => {
+                    const lines = Object.keys(this.notesData.lines)
+                    .filter(filePath => 
+                        !this.filteredNotes || this.filteredNotes.some(item => item.parentPath === filePath && item.type == "line")
+                    )
+                    .map(filePath => {
                         if (this.viewId !== null && filePath !== file) return;
                     
                         // 🔍 Проверка наличия оповещений
@@ -77,19 +91,32 @@ class Manager{
                         return new NoteItem(
                             `${hasDeadline ? "(🔔)" : ""} ${path.basename(filePath)}`,
                             vscode.TreeItemCollapsibleState.Collapsed,
-                            { count: this.notesData.lines[filePath].length, lineFile: filePath, icon: "pinned"}
+                            { count: this.notesData.lines[filePath].length, contextValue: "lines", lineFile: filePath, icon: "pinned"}
                         );
                     });
-                    
+
                     const allItems = [...items, ...directories, ...files, ...lines];
-                    
-        
+
                     // Если список пуст — возвращаем сообщение
-                    if (allItems.length === 0) {
-                        return [new NoteItem("📭 Нет записей", vscode.TreeItemCollapsibleState.None)];
+                    if (allItems.length == 0) {
+                        allItems.push(new NoteItem("📭 Нет записей", vscode.TreeItemCollapsibleState.None));
                     }
         
+                    // Добавление элемента для сброса фильтра, если фильтрация активна
+                    if (this.filteredNotes) {
+                        const resetSearchItem = new NoteItem(
+                            "Сбросить фильтр",
+                            vscode.TreeItemCollapsibleState.None,
+                            {contextValue: "resetSearch", icon: "close"}
+                        );
+                        allItems.push(resetSearchItem);  // Добавляем в конец списка
+                    }
+                    
+                    
+                    
+                    
                     return allItems;
+                
                 }
             
                 // Если это директория - показываем записи в ней
@@ -98,7 +125,12 @@ class Manager{
             
                     return Object.entries(dirPath)
                         .flatMap(([type, notes]) => 
-                            (Array.isArray(notes) ? notes : []).map(note => {
+                            (Array.isArray(notes) ? notes : [])
+                            .filter(note => {
+                                const isFound = !this.filteredNotes || this.filteredNotes.some(item => item.id === note.id);
+                                return isFound;
+                            })
+                            .map(note => {
                                 note.prov = "directories";
                                 const label = note.type === 'checklist' 
                                     ? `📋 ${note.content.name || 'Чек-лист'}`
@@ -115,10 +147,15 @@ class Manager{
                 // Если это файл - показываем записи в нем
                 if (element.context.file) {
                     const fileNotes = this.notesData.files[element.context.file] || {};
-        
+                    console.log('Filtering note:', this.filteredNotes); // Логирование для отладки
                     return Object.entries(fileNotes)
                         .flatMap(([type, notes]) => 
-                            (Array.isArray(notes) ? notes : []).map(note => {
+                            (Array.isArray(notes) ? notes : [])
+                            .filter(note => {
+                                const isFound = !this.filteredNotes || this.filteredNotes.some(item => item.id === note.id);
+                                return isFound;
+                            })
+                            .map(note => {
                                 const totalItems = note.type == "checklist" ? note.content.items.length : null;
                                 const completedItems = note.type == "checklist" ? note.content.items.filter(item => item.done).length : null;
                                 const progress = note.type == "checklist" ? totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0 : null;
@@ -140,7 +177,12 @@ class Manager{
                 if (element.context.lineFile) {
                     const filePath = element.context.lineFile;
                     
-                    return this.notesData.lines[filePath].map(note =>
+                    return this.notesData.lines[filePath]
+                    .filter(note => {
+                        const isFound = !this.filteredNotes || this.filteredNotes.some(item => item.id === note.id);
+                        return isFound;
+                    })
+                    .map(note =>
                         new NoteItem(`Line ${note.line}: ${note.content}`, vscode.TreeItemCollapsibleState.Collapsed, { ...note, prov: "lines", path: filePath,  contextValue: "line", linepath: filePath, icon: "pinned-dirty"})
                     );
                 }
@@ -176,13 +218,14 @@ class Manager{
                     ];
                 }
         
+                
                  // Если у элемента нет дочерних элементов, показываем "Нет записей"
                 // if (children.length === 0) {
                 //     return [new NoteItem("📭 Нет записей", vscode.TreeItemCollapsibleState.None)];
                 // }
             
                 return []; // 🛑 Если элемент не распознан, возвращаем пустой массив
-            
+              
     }
 
 }

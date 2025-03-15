@@ -5,7 +5,7 @@
         {
           "id": 1740823115946,
           "type": "note",
-          "content": "dfgfdg fdgfgfdg",
+          "content": "rfregerge",
           "createdAt": "2025-03-01T09:58:35.946Z",
           "path": "c:/users/taras/onedrive/plocha/projects/app/calengen/ui.view.view.class.js",
           "prov": "files"
@@ -31,7 +31,7 @@
               },
               {
                 "text": "gh gfhfgh fhfg",
-                "done": false
+                "done": true
               }
             ],
             "createdAt": "2025-03-01T08:55:20.973Z"
@@ -130,6 +130,22 @@
       "comments": [],
       "checklists": [],
       "events": []
+    },
+    "c:/users/taras/onedrive/plocha/projects/app/caled.v1.7/misc": {
+      "notes": [],
+      "comments": [],
+      "checklists": [],
+      "events": [],
+      "versions": [
+        {
+          "id": 1742062212378,
+          "type": "version",
+          "content": "sdfdsff sdfsd ",
+          "createdAt": "2025-03-15T18:10:12.378Z",
+          "deadline": null,
+          "prov": "directories"
+        }
+      ]
     }
   },
   "lines": {
@@ -138,7 +154,7 @@
         "line": 1,
         "id": 1740825905415,
         "type": "line",
-        "content": "jhjb",
+        "content": "ewdfewf",
         "createdAt": "2025-03-01T10:45:05.415Z",
         "path": "c:/users/taras/onedrive/plocha/projects/app/calengen/design/app.css"
       }
@@ -148,7 +164,7 @@
         "line": 48,
         "id": 1741547601212,
         "type": "line",
-        "content": "asdasdsd asd",
+        "content": "rfgrg",
         "createdAt": "2025-03-09T19:13:21.212Z"
       },
       {
