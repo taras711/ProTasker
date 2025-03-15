@@ -409,6 +409,7 @@ class NotesExplorer extends Manager{
     }
     
     filterNotes(type, category) {
+        const settings = getProTaskerSettings();
         const results = [];
         console.log(`🔍 Начинаем фильтрацию по типу: ${type} и категории: ${category}`);
         
@@ -424,14 +425,22 @@ class NotesExplorer extends Manager{
     
             return [];
         };
-    
+        
+        const customTypes = {}
+        const customTypesLowerCase = settings.customTypes.map(note => note.toLowerCase() + "s")
+        settings.customTypes.map(note => {customTypes[note.toLowerCase()] = note.toString().toLowerCase(); return note.toLowerCase()});
+        
         const typeMap = {
             "notes": "note",
             "comments": "comment",
             "checklists": "checklist",
             "events": "event",
-            "lines": "line"
+            "lines": "line",
+            ...customTypes
         };
+
+        const types = ["notes", "comments", "checklists", "events", ...customTypesLowerCase];
+        console.log(types)
     
         const filterByType = (items) => {
             if (!type || type === 'all') return items;
@@ -474,7 +483,7 @@ class NotesExplorer extends Manager{
                 return;
             }
     
-            ["notes", "comments", "checklists", "events"].forEach(categoryKey => {
+            types.forEach(categoryKey => {
                 if (!Array.isArray(data[categoryKey])) return;
                 
                 const filteredItems = filterByType(data[categoryKey]);
@@ -597,6 +606,19 @@ class NotesExplorer extends Manager{
     
         await this.saveNotesToFile();
     }
+}
+
+function getProTaskerSettings() {
+    const config = vscode.workspace.getConfiguration('protasker');
+    return {
+        language: config.get('language'),
+        customTypes: config.get('customTypes'),
+        noteDisplay: config.get('noteDisplay'),
+        highlightColor: config.get('highlightColor'),
+        showTimeAgo: config.get('showTimeAgo'),
+        notificatons: config.get('notificatons'),
+        inlineTextColor: config.get('inlineTextColor')
+    };
 }
 
 module.exports = { NotesExplorer };

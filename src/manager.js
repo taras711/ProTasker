@@ -77,7 +77,7 @@ class Manager{
                         return new NoteItem(
                             `${hasDeadline ? "(🔔)" : ""} ${path.basename(filePath)}`,
                             vscode.TreeItemCollapsibleState.Collapsed,
-                            { count: this.notesData.lines[filePath].length, lineFile: filePath, icon: "pinned"}
+                            { count: this.notesData.lines[filePath].length, contextValue: "lines", lineFile: filePath, icon: "pinned"}
                         );
                     });
                     

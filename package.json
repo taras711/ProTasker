@@ -91,7 +91,7 @@
       "explorer": [
         {
           "id": "notesExplorer",
-          "name": "Notes Explorer",
+          "name": "ProTasker",
           "icon": "notes.png"
         }
       ]
@@ -177,7 +177,17 @@
       },
       {
         "command": "protasker.goToNote",
-        "title": " Перейти к записи",
+        "title": "Перейти к записи",
+        "category": "ProTasker"
+      },
+      {
+        "command": "protasker.goToFile",
+        "title": "Open file",
+        "category": "ProTasker"
+      },
+      {
+        "command": "protasker.deleteAll",
+        "title": "Clear all",
         "category": "ProTasker"
       }
     ],
@@ -271,6 +281,18 @@
         {
           "command": "protasker.goToNote",
           "when": "viewItem == line",
+          "group": "navigation",
+          "icon": "$(search)"
+        },
+        {
+          "command": "protasker.goToFile",
+          "when": "viewItem == noteItem",
+          "group": "navigation",
+          "icon": "$(search)"
+        },
+        {
+          "command": "protasker.deleteAll",
+          "when": "viewItem == file || viewItem == directory || viewItem == lines",
           "group": "navigation",
           "icon": "$(search)"
         }
