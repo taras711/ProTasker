@@ -264,6 +264,7 @@ class NotesExplorer extends Manager{
             "line": "line",
             ...customTypes
         };
+
     
         const types = ["notes", "comments", "checklists", "events", "line", ...customTypesLowerCase];
         
