@@ -147,7 +147,7 @@ function activate(context) {
 
     main.set('openSettings', () => {
         vscode.commands.executeCommand('workbench.action.openSettings', 'protasker');
-    })
+    });
 
     main.set('addNote', async () => {
         const editor = vscode.window.activeTextEditor;
@@ -342,7 +342,7 @@ function activate(context) {
 
             // Разворачиваем чек-лист обратно
             vscode.window.showInformationMessage(`🔄 Пункт "${treeItem.data.text}" теперь ${treeItem.data.done ? "не выполнен ❌" : "выполнен ✅"}`);
-    })
+    });
 
     main.set('removeChecklistItem', async (item) => {
         console.log("items:", item)
@@ -377,7 +377,276 @@ function activate(context) {
         provider.refresh();
         notesExplorerProvider.refresh();
         vscode.window.showInformationMessage("✅ Элемент чеклиста удален.");
-    })
+    });
+
+    main.set('deleteNote', async (treeItem) => {
+        const editor = vscode.window.activeTextEditor;
+        console.log("Удаляем заметку", treeItem);
+        const filePath = treeItem.parent || treeItem.path;
+        if (!filePath) {
+            console.error("Ошибка: файл или папка не найдены");
+            return;
+        }
+
+        const confirm = await vscode.window.showWarningMessage("Удалить пункт чек-листа?", "Да", "Нет");
+        if (confirm !== "Да") return;
+
+        const isDirectory = provider.notesData.directories[filePath] !== undefined;
+        const target = isDirectory ? provider.notesData.directories[filePath] : provider.notesData.files[filePath];
+        
+        if (!target || !target.notes) {
+            console.error("Ошибка: нет заметок в файле/директории", filePath);
+            return;
+        }
+
+        const noteIndex = target.notes.findIndex(n => n.content.trim() === treeItem.label.trim());
+        if (noteIndex === -1) {
+            console.error("Ошибка: заметка не найдена", treeItem.label);
+            return;
+        }
+
+        target.notes.splice(noteIndex, 1);
+        await provider.saveNotesToFile();
+        
+        highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
+        provider.refresh();
+        notesExplorerProvider.refresh();
+    });
+
+    main.set('openComment', () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showErrorMessage("❌ Нет активного редактора.");
+            return;
+        }
+
+        let filePath = path.normalize(editor.document.uri.fsPath).replace(/\\/g, "/").toLowerCase(); // Приводим путь в формат notesData.json path.normalize(originalPath).replace(/\\/g, "/").toLowerCase();
+        const line = editor.selection.active.line +1; // VS Code считает строки с 0, поэтому +1
+
+        console.log(`📌 Открываем комментарии для: ${filePath}, строка: ${line}`);
+        console.log(`📌 Доступные файлы в notesData.json:`, Object.keys(provider.notesData.lines));
+
+        if (!provider.notesData.lines[filePath]) {
+            vscode.window.showErrorMessage("❌ Файл отсутствует в базе заметок.");
+            return;
+        }
+
+        // Получаем массив всех записей для файла
+        const allNotes = provider.notesData.lines[filePath] || [];
+        console.log(`📌 Найдено ${allNotes.length} записей для файла:`, allNotes);
+
+        // 🛠 Фильтруем только те, что соответствуют текущей строке
+        const lineNotes = allNotes.filter(note => {
+            console.log(`🔍 Проверяем запись: ${note.line} - ${line}`, note);
+            return note.line === line && typeof note.content === "string" && note.content.trim().length > 0;
+        });
+
+        console.log(`📌 Отфильтрованные записи для строки ${line}:`, lineNotes);
+
+        if (lineNotes.length === 0) {
+            vscode.window.showInformationMessage("📭 Для этой строки нет комментариев.");
+            return;
+        }
+
+        // Объединяем все комментарии в один текст
+        const fullText = lineNotes.map((note, index) => `Type: ${note.type}* \r\n Content: ${note.content}. \r\n Created: ${note.createdAt}`).join("\n\n");
+
+        vscode.window.showInformationMessage(`📝 Комментарии для строки ${line}:\n\n${fullText}`, { modal: true });
+    });
+
+    main.set('addNoteToLine', async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+    
+        const noteContent = await vscode.window.showInputBox({
+            placeHolder: 'Введите текст заметки'
+        });
+    
+        if (noteContent) {
+            const lineNumber = editor.selection.active.line + 1;  // Строка, на которой вставляется заметка
+            const filePath = editor.document.uri.fsPath;  // Путь к текущему файлу
+    
+            // Добавляем заметку на эту строку
+            provider.addNoteToLine(filePath, lineNumber, "line", noteContent); // Обновляем заметки в данных
+            highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
+            notesExplorerProvider.refresh();
+        }
+    });
+
+    main.set('editNote', async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return;
+    
+        const lineNumber = editor.selection.active.line + 1;  // Получаем строку
+        const filePath = path.normalize(editor.document.uri.fsPath).replace(/\\/g, "/").toLowerCase();
+    
+        if (!lineHasNote()) {
+            vscode.window.showInformationMessage("На этой строке нет заметок.");
+            return;
+        }
+    
+        const notesForFile = provider.notesData.lines[filePath] || [];
+        const notesOnLine = notesForFile.filter(note => note.line === lineNumber);
+    
+        if (notesOnLine.length === 0) {
+            vscode.window.showInformationMessage("На этой строке нет заметок.");
+            return;
+        }
+    
+        const noteToEdit = notesOnLine[0];  // Редактируем первую заметку на строке
+        const editedContent = await vscode.window.showInputBox({
+            value: noteToEdit.content,
+            placeHolder: "Редактируйте заметку"
+        });
+        console.log(`строка: ${lineNumber}, запись: ${noteToEdit.content} `)
+    
+        if (editedContent) {
+            noteToEdit.content = editedContent;
+            await provider.saveNotesToFile();
+            provider.refresh();
+            notesExplorerProvider.refresh()
+            vscode.window.showInformationMessage("Заметка успешно отредактирована.");
+        }
+        highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
+    });
+
+    main.set('deleteNoteFromList', async (treeItem) => {
+        treeItem.data = treeItem?.data ? treeItem.data : treeItem.context;
+        const settings = getProTaskerSettings();
+        console.error("❌ Ошибка: Нет данных для удаления!", treeItem);
+        if (!treeItem || !treeItem.data || !treeItem.data.id) {
+            console.error("❌ Ошибка: Нет данных для удаления!", treeItem);
+            vscode.window.showErrorMessage("Ошибка: Неверные данные для удаления.");
+            return;
+        }
+    
+        const confirm = await vscode.window.showWarningMessage(`Удалить запись ${treeItem.data.content} ?`, "Да", "Нет");
+        if (confirm !== "Да") return;
+    
+        const customTypes = settings.customTypes.map(item => (item + "s").toLowerCase());
+    
+        const { id, type, prov, path, linepath } = treeItem.data;
+        let targetCollection = null;
+        let targetKey = null;
+        let stillExists = true;
+
+        if (path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath) {
+            targetCollection = provider.notesData[prov];
+            targetKey = path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath;
+        }
+        if (!targetCollection || !targetKey || !targetCollection[targetKey]) {
+            vscode.window.showErrorMessage("Ошибка: Не удалось найти запись.");
+            return;
+        }
+    
+        console.log(`✅ Найдена коллекция ${targetKey} для удаления.`);
+    
+        // Удаляем запись из нужного массива
+        let categories = ["comments", "checklists", "events", "notes", ...customTypes];
+
+        if(type == "line"){
+            if (targetCollection[targetKey].length){
+                targetCollection[targetKey] = targetCollection[targetKey].filter(note => note.id !== id)
+            }
+
+            stillExists = targetCollection[targetKey] && targetCollection[targetKey].length > 0
+        }else{
+            categories.forEach(category => {
+                if (targetCollection[targetKey][category]) {
+                    targetCollection[targetKey][category] = targetCollection[targetKey][category].filter(note => note.id !== id);
+                }
+            });
+
+            // **Повторно проверяем, остались ли данные**
+            stillExists = categories.some(category =>
+                targetCollection[targetKey][category] && targetCollection[targetKey][category].length > 0
+            );
+        }
+        
+    
+        
+    
+        if (!stillExists) {
+            console.log(`✅ Успешно удалено all: id=${id}, type=${type}`);
+            delete targetCollection[targetKey];
+        } else {
+            console.log(`✅ ${targetKey} НЕ пуст, оставляем.`);
+        }
+    
+        provider.saveNotesToFile();
+        provider.refresh();
+        notesExplorerProvider.refresh();
+        highlightCommentedLines(vscode.window.activeTextEditor, provider); // 🔄 Обновляем подсветку
+        vscode.window.showInformationMessage("✅ Элемент удален.");
+    });
+
+    main.set('editNoteFromList', async (treeItem) => {
+        treeItem.data = treeItem?.data ? treeItem.data : treeItem.context;
+        const settings = getProTaskerSettings();
+        if (!treeItem || !treeItem.data || !treeItem.data.id) {
+            console.error("❌ Ошибка: Нет данных для изменения!", treeItem);
+            vscode.window.showErrorMessage("Ошибка: Неверные данные для изменения.");
+            return;
+        }
+        const { id, type, prov, path, linepath } = treeItem.data;
+        let targetCollection = null;
+        let targetKey = null;
+        let targetEntry = null;
+
+        const customTypes = settings.customTypes.map(item => (item + "s").toLowerCase())
+    
+        if (path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath) {
+            targetCollection = provider.notesData[prov];
+            targetKey = path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath;
+        }
+        if (!targetCollection || !targetKey || !targetCollection[targetKey]) {
+            vscode.window.showErrorMessage("Ошибка: Не удалось найти запись.");
+            console.log("Warning: " + targetCollection + " " + targetKey)
+            return;
+        }
+
+        if (prov == "lines") {
+            // 🔹 Если запись в строках файла (lines), ищем напрямую в массиве
+            targetEntry = targetCollection[targetKey].find(note => note.id === id);
+        } else {
+            // 🔹 Для файлов и директорий ищем в категориях (notes, comments, checklists, events)
+            const categories = ["notes", "comments", "checklists", "events", ...customTypes];
+            for (const category of categories) {
+                if (Array.isArray(targetCollection[targetKey][category])) {
+                    targetEntry = targetCollection[targetKey][category].find(note => note.id === id);
+                    if (targetEntry) break;
+                }
+            }
+        }
+    
+        if (!targetEntry) {
+            vscode.window.showErrorMessage("Ошибка: Запись не найдена.");
+            return;
+        }
+    
+        // Запросить новый текст у пользователя
+        const newText = await vscode.window.showInputBox({
+            placeHolder: 'Введите новый текст записи',
+            value: targetEntry.content
+        });
+    
+        if (!newText || newText.trim() === "") {
+            vscode.window.showErrorMessage("Ошибка: Текст не может быть пустым.");
+            return;
+        }
+    
+        // Обновляем запись
+        targetEntry.content = newText;
+    
+        console.log(`✏️ Запись обновлена: id=${id}, type=${type}, newContent="${newText}"`);
+        vscode.window.showInformationMessage("✅ Запись успешно обновлена.");
+    
+        // Сохраняем изменения и обновляем UI
+        provider.saveNotesToFile();
+        provider.refresh();
+        notesExplorerProvider.refresh();
+        highlightCommentedLines(vscode.window.activeTextEditor, provider); // 🔄 Обновляем подсветку
+    });
 
     // vscode.commands.registerCommand('protasker.openSettings', () => {
     //     vscode.commands.executeCommand('workbench.action.openSettings', 'protasker');
@@ -641,81 +910,81 @@ function activate(context) {
 
 
     // Регистрируем команды для удаления заметок
-    context.subscriptions.push(vscode.commands.registerCommand('protasker.deleteNote', async (treeItem) => {
-        const editor = vscode.window.activeTextEditor;
-        console.log("Удаляем заметку", treeItem);
-        const filePath = treeItem.parent || treeItem.path;
-        if (!filePath) {
-            console.error("Ошибка: файл или папка не найдены");
-            return;
-        }
+    // context.subscriptions.push(vscode.commands.registerCommand('protasker.deleteNote', async (treeItem) => {
+    //     const editor = vscode.window.activeTextEditor;
+    //     console.log("Удаляем заметку", treeItem);
+    //     const filePath = treeItem.parent || treeItem.path;
+    //     if (!filePath) {
+    //         console.error("Ошибка: файл или папка не найдены");
+    //         return;
+    //     }
 
-        const confirm = await vscode.window.showWarningMessage("Удалить пункт чек-листа?", "Да", "Нет");
-        if (confirm !== "Да") return;
+    //     const confirm = await vscode.window.showWarningMessage("Удалить пункт чек-листа?", "Да", "Нет");
+    //     if (confirm !== "Да") return;
 
-        const isDirectory = provider.notesData.directories[filePath] !== undefined;
-        const target = isDirectory ? provider.notesData.directories[filePath] : provider.notesData.files[filePath];
+    //     const isDirectory = provider.notesData.directories[filePath] !== undefined;
+    //     const target = isDirectory ? provider.notesData.directories[filePath] : provider.notesData.files[filePath];
         
-        if (!target || !target.notes) {
-            console.error("Ошибка: нет заметок в файле/директории", filePath);
-            return;
-        }
+    //     if (!target || !target.notes) {
+    //         console.error("Ошибка: нет заметок в файле/директории", filePath);
+    //         return;
+    //     }
 
-        const noteIndex = target.notes.findIndex(n => n.content.trim() === treeItem.label.trim());
-        if (noteIndex === -1) {
-            console.error("Ошибка: заметка не найдена", treeItem.label);
-            return;
-        }
+    //     const noteIndex = target.notes.findIndex(n => n.content.trim() === treeItem.label.trim());
+    //     if (noteIndex === -1) {
+    //         console.error("Ошибка: заметка не найдена", treeItem.label);
+    //         return;
+    //     }
 
-        target.notes.splice(noteIndex, 1);
-        await provider.saveNotesToFile();
+    //     target.notes.splice(noteIndex, 1);
+    //     await provider.saveNotesToFile();
         
-        highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
-        provider.refresh();
-        notesExplorerProvider.refresh();
+    //     highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
+    //     provider.refresh();
+    //     notesExplorerProvider.refresh();
         
-    }));
+    // }));
 
-    context.subscriptions.push(vscode.commands.registerCommand("protasker.openComment", async () => {
-        const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-        vscode.window.showErrorMessage("❌ Нет активного редактора.");
-        return;
-    }
+    // context.subscriptions.push(vscode.commands.registerCommand("protasker.openComment", async () => {
+    //     const editor = vscode.window.activeTextEditor;
+    // if (!editor) {
+    //     vscode.window.showErrorMessage("❌ Нет активного редактора.");
+    //     return;
+    // }
 
-    let filePath = path.normalize(editor.document.uri.fsPath).replace(/\\/g, "/").toLowerCase(); // Приводим путь в формат notesData.json path.normalize(originalPath).replace(/\\/g, "/").toLowerCase();
-    const line = editor.selection.active.line +1; // VS Code считает строки с 0, поэтому +1
+    // let filePath = path.normalize(editor.document.uri.fsPath).replace(/\\/g, "/").toLowerCase(); // Приводим путь в формат notesData.json path.normalize(originalPath).replace(/\\/g, "/").toLowerCase();
+    // const line = editor.selection.active.line +1; // VS Code считает строки с 0, поэтому +1
 
-    console.log(`📌 Открываем комментарии для: ${filePath}, строка: ${line}`);
-    console.log(`📌 Доступные файлы в notesData.json:`, Object.keys(provider.notesData.lines));
+    // console.log(`📌 Открываем комментарии для: ${filePath}, строка: ${line}`);
+    // console.log(`📌 Доступные файлы в notesData.json:`, Object.keys(provider.notesData.lines));
 
-    if (!provider.notesData.lines[filePath]) {
-        vscode.window.showErrorMessage("❌ Файл отсутствует в базе заметок.");
-        return;
-    }
+    // if (!provider.notesData.lines[filePath]) {
+    //     vscode.window.showErrorMessage("❌ Файл отсутствует в базе заметок.");
+    //     return;
+    // }
 
-    // Получаем массив всех записей для файла
-    const allNotes = provider.notesData.lines[filePath] || [];
-    console.log(`📌 Найдено ${allNotes.length} записей для файла:`, allNotes);
+    // // Получаем массив всех записей для файла
+    // const allNotes = provider.notesData.lines[filePath] || [];
+    // console.log(`📌 Найдено ${allNotes.length} записей для файла:`, allNotes);
 
-    // 🛠 Фильтруем только те, что соответствуют текущей строке
-    const lineNotes = allNotes.filter(note => {
-        console.log(`🔍 Проверяем запись: ${note.line} - ${line}`, note);
-        return note.line === line && typeof note.content === "string" && note.content.trim().length > 0;
-    });
+    // // 🛠 Фильтруем только те, что соответствуют текущей строке
+    // const lineNotes = allNotes.filter(note => {
+    //     console.log(`🔍 Проверяем запись: ${note.line} - ${line}`, note);
+    //     return note.line === line && typeof note.content === "string" && note.content.trim().length > 0;
+    // });
 
-    console.log(`📌 Отфильтрованные записи для строки ${line}:`, lineNotes);
+    // console.log(`📌 Отфильтрованные записи для строки ${line}:`, lineNotes);
 
-    if (lineNotes.length === 0) {
-        vscode.window.showInformationMessage("📭 Для этой строки нет комментариев.");
-        return;
-    }
+    // if (lineNotes.length === 0) {
+    //     vscode.window.showInformationMessage("📭 Для этой строки нет комментариев.");
+    //     return;
+    // }
 
-    // Объединяем все комментарии в один текст
-    const fullText = lineNotes.map((note, index) => `Type: ${note.type}* \r\n Content: ${note.content}. \r\n Created: ${note.createdAt}`).join("\n\n");
+    // // Объединяем все комментарии в один текст
+    // const fullText = lineNotes.map((note, index) => `Type: ${note.type}* \r\n Content: ${note.content}. \r\n Created: ${note.createdAt}`).join("\n\n");
 
-    vscode.window.showInformationMessage(`📝 Комментарии для строки ${line}:\n\n${fullText}`, { modal: true });
-    }));
+    // vscode.window.showInformationMessage(`📝 Комментарии для строки ${line}:\n\n${fullText}`, { modal: true });
+    // }));
 
     function highlightCommentedLines(editor, provider) {
         if (!editor || !editor.document) {
@@ -823,201 +1092,201 @@ function activate(context) {
     }
     
     // Команда для добавления заметки
-    vscode.commands.registerCommand('protasker.addNoteToLine', async () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) return;
+    // vscode.commands.registerCommand('protasker.addNoteToLine', async () => {
+    //     const editor = vscode.window.activeTextEditor;
+    //     if (!editor) return;
     
-        const noteContent = await vscode.window.showInputBox({
-            placeHolder: 'Введите текст заметки'
-        });
+    //     const noteContent = await vscode.window.showInputBox({
+    //         placeHolder: 'Введите текст заметки'
+    //     });
     
-        if (noteContent) {
-            const lineNumber = editor.selection.active.line + 1;  // Строка, на которой вставляется заметка
-            const filePath = editor.document.uri.fsPath;  // Путь к текущему файлу
+    //     if (noteContent) {
+    //         const lineNumber = editor.selection.active.line + 1;  // Строка, на которой вставляется заметка
+    //         const filePath = editor.document.uri.fsPath;  // Путь к текущему файлу
     
-            // Добавляем заметку на эту строку
-            provider.addNoteToLine(filePath, lineNumber, "line", noteContent); // Обновляем заметки в данных
-            highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
-            notesExplorerProvider.refresh();
-        }
-    });
+    //         // Добавляем заметку на эту строку
+    //         provider.addNoteToLine(filePath, lineNumber, "line", noteContent); // Обновляем заметки в данных
+    //         highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
+    //         notesExplorerProvider.refresh();
+    //     }
+    // });
     
     // Команда для редактирования заметки
-    context.subscriptions.push(vscode.commands.registerCommand('protasker.editNote', async () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) return;
+    // context.subscriptions.push(vscode.commands.registerCommand('protasker.editNote', async () => {
+    //     const editor = vscode.window.activeTextEditor;
+    //     if (!editor) return;
     
-        const lineNumber = editor.selection.active.line + 1;  // Получаем строку
-        const filePath = path.normalize(editor.document.uri.fsPath).replace(/\\/g, "/").toLowerCase();
+    //     const lineNumber = editor.selection.active.line + 1;  // Получаем строку
+    //     const filePath = path.normalize(editor.document.uri.fsPath).replace(/\\/g, "/").toLowerCase();
     
-        if (!lineHasNote()) {
-            vscode.window.showInformationMessage("На этой строке нет заметок.");
-            return;
-        }
+    //     if (!lineHasNote()) {
+    //         vscode.window.showInformationMessage("На этой строке нет заметок.");
+    //         return;
+    //     }
     
-        const notesForFile = provider.notesData.lines[filePath] || [];
-        const notesOnLine = notesForFile.filter(note => note.line === lineNumber);
+    //     const notesForFile = provider.notesData.lines[filePath] || [];
+    //     const notesOnLine = notesForFile.filter(note => note.line === lineNumber);
     
-        if (notesOnLine.length === 0) {
-            vscode.window.showInformationMessage("На этой строке нет заметок.");
-            return;
-        }
+    //     if (notesOnLine.length === 0) {
+    //         vscode.window.showInformationMessage("На этой строке нет заметок.");
+    //         return;
+    //     }
     
-        const noteToEdit = notesOnLine[0];  // Редактируем первую заметку на строке
-        const editedContent = await vscode.window.showInputBox({
-            value: noteToEdit.content,
-            placeHolder: "Редактируйте заметку"
-        });
-        console.log(`строка: ${lineNumber}, запись: ${noteToEdit.content} `)
+    //     const noteToEdit = notesOnLine[0];  // Редактируем первую заметку на строке
+    //     const editedContent = await vscode.window.showInputBox({
+    //         value: noteToEdit.content,
+    //         placeHolder: "Редактируйте заметку"
+    //     });
+    //     console.log(`строка: ${lineNumber}, запись: ${noteToEdit.content} `)
     
-        if (editedContent) {
-            noteToEdit.content = editedContent;
-            await provider.saveNotesToFile();
-            provider.refresh();
-            notesExplorerProvider.refresh()
-            vscode.window.showInformationMessage("Заметка успешно отредактирована.");
-        }
-        highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
-    }));
+    //     if (editedContent) {
+    //         noteToEdit.content = editedContent;
+    //         await provider.saveNotesToFile();
+    //         provider.refresh();
+    //         notesExplorerProvider.refresh()
+    //         vscode.window.showInformationMessage("Заметка успешно отредактирована.");
+    //     }
+    //     highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
+    // }));
     
     // Команда для удаления заметки
-    context.subscriptions.push(vscode.commands.registerCommand('protasker.deleteNoteFromList', async (treeItem) => {
-        treeItem.data = treeItem?.data ? treeItem.data : treeItem.context;
-        const settings = getProTaskerSettings();
-        console.error("❌ Ошибка: Нет данных для удаления!", treeItem);
-        if (!treeItem || !treeItem.data || !treeItem.data.id) {
-            console.error("❌ Ошибка: Нет данных для удаления!", treeItem);
-            vscode.window.showErrorMessage("Ошибка: Неверные данные для удаления.");
-            return;
-        }
+    // context.subscriptions.push(vscode.commands.registerCommand('protasker.deleteNoteFromList', async (treeItem) => {
+    //     treeItem.data = treeItem?.data ? treeItem.data : treeItem.context;
+    //     const settings = getProTaskerSettings();
+    //     console.error("❌ Ошибка: Нет данных для удаления!", treeItem);
+    //     if (!treeItem || !treeItem.data || !treeItem.data.id) {
+    //         console.error("❌ Ошибка: Нет данных для удаления!", treeItem);
+    //         vscode.window.showErrorMessage("Ошибка: Неверные данные для удаления.");
+    //         return;
+    //     }
     
-        const confirm = await vscode.window.showWarningMessage(`Удалить запись ${treeItem.data.content} ?`, "Да", "Нет");
-        if (confirm !== "Да") return;
+    //     const confirm = await vscode.window.showWarningMessage(`Удалить запись ${treeItem.data.content} ?`, "Да", "Нет");
+    //     if (confirm !== "Да") return;
     
-        const customTypes = settings.customTypes.map(item => (item + "s").toLowerCase());
+    //     const customTypes = settings.customTypes.map(item => (item + "s").toLowerCase());
     
-        const { id, type, prov, path, linepath } = treeItem.data;
-        let targetCollection = null;
-        let targetKey = null;
-        let stillExists = true;
+    //     const { id, type, prov, path, linepath } = treeItem.data;
+    //     let targetCollection = null;
+    //     let targetKey = null;
+    //     let stillExists = true;
 
-        if (path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath) {
-            targetCollection = provider.notesData[prov];
-            targetKey = path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath;
-        }
-        if (!targetCollection || !targetKey || !targetCollection[targetKey]) {
-            vscode.window.showErrorMessage("Ошибка: Не удалось найти запись.");
-            return;
-        }
+    //     if (path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath) {
+    //         targetCollection = provider.notesData[prov];
+    //         targetKey = path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath;
+    //     }
+    //     if (!targetCollection || !targetKey || !targetCollection[targetKey]) {
+    //         vscode.window.showErrorMessage("Ошибка: Не удалось найти запись.");
+    //         return;
+    //     }
     
-        console.log(`✅ Найдена коллекция ${targetKey} для удаления.`);
+    //     console.log(`✅ Найдена коллекция ${targetKey} для удаления.`);
     
-        // Удаляем запись из нужного массива
-        let categories = ["comments", "checklists", "events", "notes", ...customTypes];
+    //     // Удаляем запись из нужного массива
+    //     let categories = ["comments", "checklists", "events", "notes", ...customTypes];
 
-        if(type == "line"){
-            if (targetCollection[targetKey].length){
-                targetCollection[targetKey] = targetCollection[targetKey].filter(note => note.id !== id)
-            }
+    //     if(type == "line"){
+    //         if (targetCollection[targetKey].length){
+    //             targetCollection[targetKey] = targetCollection[targetKey].filter(note => note.id !== id)
+    //         }
 
-            stillExists = targetCollection[targetKey] && targetCollection[targetKey].length > 0
-        }else{
-            categories.forEach(category => {
-                if (targetCollection[targetKey][category]) {
-                    targetCollection[targetKey][category] = targetCollection[targetKey][category].filter(note => note.id !== id);
-                }
-            });
+    //         stillExists = targetCollection[targetKey] && targetCollection[targetKey].length > 0
+    //     }else{
+    //         categories.forEach(category => {
+    //             if (targetCollection[targetKey][category]) {
+    //                 targetCollection[targetKey][category] = targetCollection[targetKey][category].filter(note => note.id !== id);
+    //             }
+    //         });
 
-            // **Повторно проверяем, остались ли данные**
-            stillExists = categories.some(category =>
-                targetCollection[targetKey][category] && targetCollection[targetKey][category].length > 0
-            );
-        }
+    //         // **Повторно проверяем, остались ли данные**
+    //         stillExists = categories.some(category =>
+    //             targetCollection[targetKey][category] && targetCollection[targetKey][category].length > 0
+    //         );
+    //     }
         
     
         
     
-        if (!stillExists) {
-            console.log(`✅ Успешно удалено all: id=${id}, type=${type}`);
-            delete targetCollection[targetKey];
-        } else {
-            console.log(`✅ ${targetKey} НЕ пуст, оставляем.`);
-        }
+    //     if (!stillExists) {
+    //         console.log(`✅ Успешно удалено all: id=${id}, type=${type}`);
+    //         delete targetCollection[targetKey];
+    //     } else {
+    //         console.log(`✅ ${targetKey} НЕ пуст, оставляем.`);
+    //     }
     
-        provider.saveNotesToFile();
-        provider.refresh();
-        notesExplorerProvider.refresh();
-        highlightCommentedLines(vscode.window.activeTextEditor, provider); // 🔄 Обновляем подсветку
-        vscode.window.showInformationMessage("✅ Элемент удален.");
-    }));
+    //     provider.saveNotesToFile();
+    //     provider.refresh();
+    //     notesExplorerProvider.refresh();
+    //     highlightCommentedLines(vscode.window.activeTextEditor, provider); // 🔄 Обновляем подсветку
+    //     vscode.window.showInformationMessage("✅ Элемент удален.");
+    // }));
 
-    context.subscriptions.push(vscode.commands.registerCommand('protasker.editNoteFromList', async (treeItem) => {
-        treeItem.data = treeItem?.data ? treeItem.data : treeItem.context;
-        const settings = getProTaskerSettings();
-        if (!treeItem || !treeItem.data || !treeItem.data.id) {
-            console.error("❌ Ошибка: Нет данных для изменения!", treeItem);
-            vscode.window.showErrorMessage("Ошибка: Неверные данные для изменения.");
-            return;
-        }
-        const { id, type, prov, path, linepath } = treeItem.data;
-        let targetCollection = null;
-        let targetKey = null;
-        let targetEntry = null;
+    // context.subscriptions.push(vscode.commands.registerCommand('protasker.editNoteFromList', async (treeItem) => {
+    //     treeItem.data = treeItem?.data ? treeItem.data : treeItem.context;
+    //     const settings = getProTaskerSettings();
+    //     if (!treeItem || !treeItem.data || !treeItem.data.id) {
+    //         console.error("❌ Ошибка: Нет данных для изменения!", treeItem);
+    //         vscode.window.showErrorMessage("Ошибка: Неверные данные для изменения.");
+    //         return;
+    //     }
+    //     const { id, type, prov, path, linepath } = treeItem.data;
+    //     let targetCollection = null;
+    //     let targetKey = null;
+    //     let targetEntry = null;
 
-        const customTypes = settings.customTypes.map(item => (item + "s").toLowerCase())
+    //     const customTypes = settings.customTypes.map(item => (item + "s").toLowerCase())
     
-        if (path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath) {
-            targetCollection = provider.notesData[prov];
-            targetKey = path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath;
-        }
-        if (!targetCollection || !targetKey || !targetCollection[targetKey]) {
-            vscode.window.showErrorMessage("Ошибка: Не удалось найти запись.");
-            console.log("Warning: " + targetCollection + " " + targetKey)
-            return;
-        }
+    //     if (path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath) {
+    //         targetCollection = provider.notesData[prov];
+    //         targetKey = path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath;
+    //     }
+    //     if (!targetCollection || !targetKey || !targetCollection[targetKey]) {
+    //         vscode.window.showErrorMessage("Ошибка: Не удалось найти запись.");
+    //         console.log("Warning: " + targetCollection + " " + targetKey)
+    //         return;
+    //     }
 
-        if (prov == "lines") {
-            // 🔹 Если запись в строках файла (lines), ищем напрямую в массиве
-            targetEntry = targetCollection[targetKey].find(note => note.id === id);
-        } else {
-            // 🔹 Для файлов и директорий ищем в категориях (notes, comments, checklists, events)
-            const categories = ["notes", "comments", "checklists", "events", ...customTypes];
-            for (const category of categories) {
-                if (Array.isArray(targetCollection[targetKey][category])) {
-                    targetEntry = targetCollection[targetKey][category].find(note => note.id === id);
-                    if (targetEntry) break;
-                }
-            }
-        }
+    //     if (prov == "lines") {
+    //         // 🔹 Если запись в строках файла (lines), ищем напрямую в массиве
+    //         targetEntry = targetCollection[targetKey].find(note => note.id === id);
+    //     } else {
+    //         // 🔹 Для файлов и директорий ищем в категориях (notes, comments, checklists, events)
+    //         const categories = ["notes", "comments", "checklists", "events", ...customTypes];
+    //         for (const category of categories) {
+    //             if (Array.isArray(targetCollection[targetKey][category])) {
+    //                 targetEntry = targetCollection[targetKey][category].find(note => note.id === id);
+    //                 if (targetEntry) break;
+    //             }
+    //         }
+    //     }
     
-        if (!targetEntry) {
-            vscode.window.showErrorMessage("Ошибка: Запись не найдена.");
-            return;
-        }
+    //     if (!targetEntry) {
+    //         vscode.window.showErrorMessage("Ошибка: Запись не найдена.");
+    //         return;
+    //     }
     
-        // Запросить новый текст у пользователя
-        const newText = await vscode.window.showInputBox({
-            placeHolder: 'Введите новый текст записи',
-            value: targetEntry.content
-        });
+    //     // Запросить новый текст у пользователя
+    //     const newText = await vscode.window.showInputBox({
+    //         placeHolder: 'Введите новый текст записи',
+    //         value: targetEntry.content
+    //     });
     
-        if (!newText || newText.trim() === "") {
-            vscode.window.showErrorMessage("Ошибка: Текст не может быть пустым.");
-            return;
-        }
+    //     if (!newText || newText.trim() === "") {
+    //         vscode.window.showErrorMessage("Ошибка: Текст не может быть пустым.");
+    //         return;
+    //     }
     
-        // Обновляем запись
-        targetEntry.content = newText;
+    //     // Обновляем запись
+    //     targetEntry.content = newText;
     
-        console.log(`✏️ Запись обновлена: id=${id}, type=${type}, newContent="${newText}"`);
-        vscode.window.showInformationMessage("✅ Запись успешно обновлена.");
+    //     console.log(`✏️ Запись обновлена: id=${id}, type=${type}, newContent="${newText}"`);
+    //     vscode.window.showInformationMessage("✅ Запись успешно обновлена.");
     
-        // Сохраняем изменения и обновляем UI
-        provider.saveNotesToFile();
-        provider.refresh();
-        notesExplorerProvider.refresh();
-        highlightCommentedLines(vscode.window.activeTextEditor, provider); // 🔄 Обновляем подсветку
-    }));
+    //     // Сохраняем изменения и обновляем UI
+    //     provider.saveNotesToFile();
+    //     provider.refresh();
+    //     notesExplorerProvider.refresh();
+    //     highlightCommentedLines(vscode.window.activeTextEditor, provider); // 🔄 Обновляем подсветку
+    // }));
     
     
     context.subscriptions.push(vscode.commands.registerCommand('protasker.searchNotes', async () => {
