@@ -1,4 +1,5 @@
 const vscode = require('vscode');
+const { Main } = require("./src/main");
 const { NotesExplorer } = require('./src/dataManager');
 const { NotesExplorerProvider } = require('./src/notesExplorerProvider');
 //const { Manager } = require('./src/manager');
@@ -9,6 +10,7 @@ const path = require("path")
 const notifiedDeadlines = new Set();
 function activate(context) {
     console.log('ProTasker extension activated');
+    const main = new Main(context);
     const provider = new NotesExplorer(context);
     const notesExplorerProvider = new NotesExplorerProvider(provider.notesData, context);
     //const notesExplorerProvider = new Manager("notesExplorer");
@@ -123,12 +125,31 @@ function activate(context) {
         
     }
 
-    vscode.commands.registerCommand('protasker.openSettings', () => {
+    main.comands([
+        'openSettings',
+        'addNote',
+        'addChecklistItem',
+        'toggleChecklistItem',
+        'removeChecklistItem',
+        'deleteNote',
+        'openComment',
+        'addNoteToLine',
+        'editNote',
+        'deleteNoteFromList',
+        'editNoteFromList',
+        'searchNotes',
+        'resetSearch',
+        'filterNotes',
+        'goToNote',
+        'goToFile',
+        'deleteAll',
+    ]);
+
+    main.set('openSettings', () => {
         vscode.commands.executeCommand('workbench.action.openSettings', 'protasker');
-    });
-    
-    // Универсальная команда для добавления заметки
-    context.subscriptions.push(vscode.commands.registerCommand('protasker.addNote', async () => {
+    })
+
+    main.set('addNote', async () => {
         const editor = vscode.window.activeTextEditor;
         const settings = getProTaskerSettings();
         let deadline = null;
@@ -220,16 +241,16 @@ function activate(context) {
         notesExplorerProvider.refresh();
     
         highlightCommentedLines(editor, provider);
-    }));
+    });
 
-    context.subscriptions.push(vscode.commands.registerCommand('protasker.addChecklistItem', async (treeItem) => {
-        if (!treeItem || treeItem.data.type !== "checklist") return;
+    main.set('addChecklistItem', async (treeItem) => {
+        if (!treeItem || treeItem.context.type !== "checklist") return;
 
         const newItemText = await vscode.window.showInputBox({ placeHolder: 'Введите новый пункт' });
         if (!newItemText) return;
         console.log("🗑 Удаление элемента чеклиста:", treeItem);
         // Добавляем новый пункт в чек-лист
-        treeItem.data.content.items.push({ text: newItemText, done: false });
+        treeItem.context.content.items.push({ text: newItemText, done: false });
         
         try {
             // Сохраняем данные через provider
@@ -243,10 +264,9 @@ function activate(context) {
         } catch (error) {
             vscode.window.showErrorMessage(`❌ Ошибка при сохранении: ${error.message}`);
         }
-    }));
-    
-    context.subscriptions.push(vscode.commands.registerCommand('protasker.toggleChecklistItem', async (treeItem) => {
-        
+    });
+
+    main.set('toggleChecklistItem', async (treeItem) => {
         treeItem.data = treeItem?.data ? treeItem.data : treeItem.context;
         if (!treeItem || typeof treeItem.data.done === "undefined") {
             console.log("❌ Ошибка: treeItem невалидный или done отсутствует", treeItem);
@@ -321,48 +341,284 @@ function activate(context) {
             notesExplorerProvider.refresh();
 
             // Разворачиваем чек-лист обратно
-            vscode.window.showInformationMessage(`🔄 Пункт "${treeItem.data.text}" теперь ${treeItem.data.done ? "выполнен ✅" : "не выполнен ❌"}`);
+            vscode.window.showInformationMessage(`🔄 Пункт "${treeItem.data.text}" теперь ${treeItem.data.done ? "не выполнен ❌" : "выполнен ✅"}`);
+    })
+
+    main.set('removeChecklistItem', async (item) => {
+        console.log("items:", item)
+        if (!item || !item.context.checklistId || item.context.index === undefined) {
+            vscode.window.showErrorMessage("❌ Невозможно удалить элемент: данные отсутствуют.");
+            return;
+        }
+
+        const confirm = await vscode.window.showWarningMessage(`Удалить пункт чек-листа ${item.context.text}?`, "Да", "Нет");
+        if (confirm !== "Да") return;
+
+        console.log("🗑 Удаление элемента чеклиста:", item);
+
+        // Получаем файл, в котором хранится чеклист
+        const filePath = findChecklistFilePath(item.context.checklistId, item.context.path);
+        if (!filePath) {
+            vscode.window.showErrorMessage("❌ Файл с чеклистом не найден.");
+            return;
+        }
+
+        // Загружаем данные чеклиста
+        const checklist = provider.notesData[item.context.path][filePath].checklists.find(cl => cl.id === item.context.checklistId);
+        if (!checklist) {
+            vscode.window.showErrorMessage("❌ Чеклист не найден.");
+            return;
+        }
+        // Удаляем элемент из чеклиста
+        checklist.content.items.splice(item.context.index, 1);
+
+        // Сохраняем обновленный чеклист
+        await provider.saveNotesToFile();
+        provider.refresh();
+        notesExplorerProvider.refresh();
+        vscode.window.showInformationMessage("✅ Элемент чеклиста удален.");
+    })
+
+    // vscode.commands.registerCommand('protasker.openSettings', () => {
+    //     vscode.commands.executeCommand('workbench.action.openSettings', 'protasker');
+    // });
+    
+    // Универсальная команда для добавления заметки
+    // context.subscriptions.push(vscode.commands.registerCommand('protasker.addNote', async () => {
+    //     const editor = vscode.window.activeTextEditor;
+    //     const settings = getProTaskerSettings();
+    //     let deadline = null;
+
+    //     // 1️⃣ Запрашиваем тип записи
+    //     const entryType = await vscode.window.showQuickPick(['Note', 'Comment', 'Checklist', 'Event', ...settings.customTypes], {
+    //         placeHolder: 'Выберите тип записи'
+    //     });
+    
+    //     if (!entryType) return;
+    
+    //     // 2️⃣ Запрашиваем место хранения
+    //     const selection = await vscode.window.showQuickPick(['File', 'Directory'], {
+    //         placeHolder: 'Выберите, где добавить запись'
+    //     });
+    
+    //     if (!selection) return;
+        
+    //     // 4️⃣ Если это чек-лист или событие, спрашиваем про дедлайн
+    //     if (entryType === 'Checklist' || entryType === 'Event') {
+    //         const wantsDeadline = await vscode.window.showQuickPick(['Да', 'Нет'], {
+    //             placeHolder: 'Добавить дедлайн?'
+    //         });
+
+    //         if (wantsDeadline === 'Да') {
+    //             deadline = await vscode.window.showInputBox({ placeHolder: 'Введите дату (YYYY-MM-DD HH:MM)' });
+    //             if (deadline) {
+    //                 const parsedDate = new Date(deadline);
+    //                 if (isNaN(parsedDate.getTime())) {
+    //                     vscode.window.showErrorMessage('❌ Неверный формат даты. Используйте YYYY-MM-DD HH:MM');
+    //                     return;
+    //                 }
+    //                 deadline = parsedDate.toISOString();
+    //                 console.log(deadline)
+    //             }
+    //         }
+    //     }
+
+    //     let filePath = await getTargetPath(selection);
+    //     if (!filePath){  
+    //         vscode.window.showErrorMessage("No active editor.");
+    //         return
+    //     };
+    
+    //     // 3️⃣ Если это чек-лист, запрашиваем пункты
+    //     if (entryType === 'Checklist') {
+    //         let checklistItems = [];
+    //         let addMore = true;
+
+    //         const name = await vscode.window.showInputBox({placeHolder: 'Checklist name'});
+
+    //         if (!name) return;
+    
+    //         while (addMore) {
+    //             const item = await vscode.window.showInputBox({ placeHolder: 'Введите пункт чек-листа (оставьте пустым для завершения)' });
+    //             if (!item) break;
+    //             checklistItems.push({ text: item, done: false });
+    
+    //             addMore = await vscode.window.showQuickPick(['Добавить ещё', 'Завершить'], { placeHolder: 'Добавить ещё пункт?' }) === 'Добавить ещё';
+    //         }
+    
+    //         if (checklistItems.length === 0) return;
+    
+    //         const checklistEntry = {
+    //             id: Date.now(),
+    //             name: name,
+    //             type: 'checklist',
+    //             items: checklistItems,
+    //             createdAt: new Date().toISOString(),
+    //             deadline: deadline
+    //         };
+    
+    //         await provider.addEntry(filePath, selection === 'Directory', 'checklist', checklistEntry);
+    //     } else {
+    //         // 4️⃣ Для остальных типов — обычный ввод контента
+    //         const noteContent = await vscode.window.showInputBox({ placeHolder: 'Введите текст записи' });
+    //         if (!noteContent) return;
+    
+    //         if (selection === 'File') {
+    //             await provider.addEntry(filePath, false, entryType.toLowerCase(), noteContent, deadline);
+    //         } else if (selection === 'Directory') {
+    //             await provider.addEntry(filePath, true, entryType.toLowerCase(), noteContent, deadline);
+    //         } else if (selection === 'Line') {
+    //             const lineNumber = editor ? editor.selection.active.line + 1 : 0;
+    //             await provider.addNoteToLine(filePath, lineNumber, entryType.toLowerCase(), noteContent);
+    //         }
+    //     }
+    //     provider.refresh();
+    //     notesExplorerProvider.refresh();
+    
+    //     highlightCommentedLines(editor, provider);
+    // }));
+
+    // context.subscriptions.push(vscode.commands.registerCommand('protasker.addChecklistItem', async (treeItem) => {
+    //     if (!treeItem || treeItem.data.type !== "checklist") return;
+
+    //     const newItemText = await vscode.window.showInputBox({ placeHolder: 'Введите новый пункт' });
+    //     if (!newItemText) return;
+    //     console.log("🗑 Удаление элемента чеклиста:", treeItem);
+    //     // Добавляем новый пункт в чек-лист
+    //     treeItem.data.content.items.push({ text: newItemText, done: false });
+        
+    //     try {
+    //         // Сохраняем данные через provider
+    //         await provider.saveNotesToFile();
+
+    //         // Обновляем UI
+    //         provider.refresh();
+    //         notesExplorerProvider.refresh();
+
+    //         vscode.window.showInformationMessage(`✅ Пункт "${newItemText}" добавлен в чек-лист!`);
+    //     } catch (error) {
+    //         vscode.window.showErrorMessage(`❌ Ошибка при сохранении: ${error.message}`);
+    //     }
+    // }));
+    
+    // context.subscriptions.push(vscode.commands.registerCommand('protasker.toggleChecklistItem', async (treeItem) => {
+        
+    //     treeItem.data = treeItem?.data ? treeItem.data : treeItem.context;
+    //     if (!treeItem || typeof treeItem.data.done === "undefined") {
+    //         console.log("❌ Ошибка: treeItem невалидный или done отсутствует", treeItem);
+    //         return;
+    //     }
+    //     // Получаем filePath через findChecklistFilePath
+    //     const filePath = findChecklistFilePath(treeItem.data.checklistId, treeItem.data.path);
+    //     if (!filePath) {
+    //         console.log(`❌ Ошибка: Не удалось найти файл для чек-листа ${treeItem.data.checklistId}`);
+    //         return;
+    //     }
+    
+    //     console.log("📂 Найден путь к файлу:", filePath);
+    
+    //     // Проверяем, есть ли файл в notesData
+    //     const fileNotes = provider.notesData[treeItem.data.path][filePath];
+    //     if (!fileNotes) {
+    //         console.log(`❌ Ошибка: Файл ${filePath} не найден в notesData.files`);
+    //         return;
+    //     }
+    
+    //     console.log("📂 Найден файл:", fileNotes);
+    
+    //     // Проверяем, есть ли чек-листы
+    //     if (!Array.isArray(fileNotes.checklists)) {
+    //         console.log(`❌ Ошибка: В файле ${filePath} нет чек-листов`);
+    //         return;
+    //     }
+    
+    //     console.log("📌 Найденные чек-листы:", fileNotes.checklists);
+    
+    //     // Ищем чек-лист по ID
+    //     const checklistIndex = fileNotes.checklists.findIndex(cl => cl.id === treeItem.data.checklistId);
+    //     if (checklistIndex === -1) {
+    //         console.log(`❌ Ошибка: Чек-лист с ID ${treeItem.data.checklistId} не найден`);
+    //         return;
+    //     }
+    
+    //     console.log("✅ Найден чек-лист:", fileNotes.checklists[checklistIndex]);
+    
+    //     // Проверяем, есть ли `items`
+    //     if (!Array.isArray(fileNotes.checklists[checklistIndex].content.items)) {
+    //         console.log(`❌ Ошибка: В чек-листе ${treeItem.data.checklistId} отсутствует массив items`);
+    //         return;
+    //     }
+    
+    //     // Ищем пункт чек-листа
+    //     const checklistItemIndex = fileNotes.checklists[checklistIndex].content.items.findIndex(item => item.text === treeItem.data.text);
+    //     if (checklistItemIndex === -1) {
+    //         console.log(`❌ Ошибка: Пункт '${treeItem.data.text}' не найден в чек-листе`);
+    //         return;
+    //     }
+    
+    //     console.log("✏️ Изменяем статус для пункта:", fileNotes.checklists[checklistIndex].content.items[checklistItemIndex]);
+    
+    //     // Меняем статус выполнения пункта
+    //     fileNotes.checklists[checklistIndex].content.items[checklistItemIndex].done = !fileNotes.checklists[checklistIndex].content.items[checklistItemIndex].done;
+    
+    //     console.log("✅ Новый статус пункта:", fileNotes.checklists[checklistIndex].content.items[checklistItemIndex]);
+    
+    //     // Обновляем данные в provider.notesData
+    //     provider.notesData[treeItem.data.path][filePath] = { ...fileNotes };
+    
+    //     console.log("💾 Сохраняем изменения в provider.notesData:", provider.notesData);
+
+
+    // // Сохраняем изменения
+    //         provider.saveNotesToFile();
+    
+    //         // Обновляем UI
+    //         provider.refresh();
+    //         notesExplorerProvider.refresh();
+
+    //         // Разворачиваем чек-лист обратно
+    //         vscode.window.showInformationMessage(`🔄 Пункт "${treeItem.data.text}" теперь ${treeItem.data.done ? "не выполнен ❌" : "выполнен ✅"}`);
 
     
         
-    }));
+    // }));
     
-    context.subscriptions.push(
-        vscode.commands.registerCommand("protasker.removeChecklistItem", async (item) => {
-            //console.log(item)
-            if (!item || !item.data.checklistId || item.data.index === undefined) {
-                vscode.window.showErrorMessage("❌ Невозможно удалить элемент: данные отсутствуют.");
-                return;
-            }
+    // context.subscriptions.push(
+    //     vscode.commands.registerCommand("protasker.removeChecklistItem", async (item) => {
+    //         //console.log(item)
+    //         if (!item || !item.data.checklistId || item.data.index === undefined) {
+    //             vscode.window.showErrorMessage("❌ Невозможно удалить элемент: данные отсутствуют.");
+    //             return;
+    //         }
 
-            const confirm = await vscode.window.showWarningMessage("Удалить пункт чек-листа?", "Да", "Нет");
-            if (confirm !== "Да") return;
+    //         const confirm = await vscode.window.showWarningMessage("Удалить пункт чек-листа?", "Да", "Нет");
+    //         if (confirm !== "Да") return;
     
-            console.log("🗑 Удаление элемента чеклиста:", item);
+    //         console.log("🗑 Удаление элемента чеклиста:", item);
     
-            // Получаем файл, в котором хранится чеклист
-            const filePath = findChecklistFilePath(item.data.checklistId, item.data.path);
-            if (!filePath) {
-                vscode.window.showErrorMessage("❌ Файл с чеклистом не найден.");
-                return;
-            }
+    //         // Получаем файл, в котором хранится чеклист
+    //         const filePath = findChecklistFilePath(item.data.checklistId, item.data.path);
+    //         if (!filePath) {
+    //             vscode.window.showErrorMessage("❌ Файл с чеклистом не найден.");
+    //             return;
+    //         }
     
-            // Загружаем данные чеклиста
-            const checklist = provider.notesData[item.data.path][filePath].checklists.find(cl => cl.id === item.data.checklistId);
-            if (!checklist) {
-                vscode.window.showErrorMessage("❌ Чеклист не найден.");
-                return;
-            }
-            // Удаляем элемент из чеклиста
-            checklist.content.items.splice(item.index, 1);
+    //         // Загружаем данные чеклиста
+    //         const checklist = provider.notesData[item.data.path][filePath].checklists.find(cl => cl.id === item.data.checklistId);
+    //         if (!checklist) {
+    //             vscode.window.showErrorMessage("❌ Чеклист не найден.");
+    //             return;
+    //         }
+    //         // Удаляем элемент из чеклиста
+    //         checklist.content.items.splice(item.index, 1);
     
-            // Сохраняем обновленный чеклист
-            await provider.saveNotesToFile();
-            provider.refresh();
-            notesExplorerProvider.refresh();
-            vscode.window.showInformationMessage("✅ Элемент чеклиста удален.");
-        })
-    );
+    //         // Сохраняем обновленный чеклист
+    //         await provider.saveNotesToFile();
+    //         provider.refresh();
+    //         notesExplorerProvider.refresh();
+    //         vscode.window.showInformationMessage("✅ Элемент чеклиста удален.");
+    //     })
+    // );
     
     function findChecklistFilePath(checklistId, type = "files") {
         //const editor = vscode.window.activeTextEditor;
@@ -627,6 +883,7 @@ function activate(context) {
     // Команда для удаления заметки
     context.subscriptions.push(vscode.commands.registerCommand('protasker.deleteNoteFromList', async (treeItem) => {
         treeItem.data = treeItem?.data ? treeItem.data : treeItem.context;
+        const settings = getProTaskerSettings();
         console.error("❌ Ошибка: Нет данных для удаления!", treeItem);
         if (!treeItem || !treeItem.data || !treeItem.data.id) {
             console.error("❌ Ошибка: Нет данных для удаления!", treeItem);
@@ -634,18 +891,19 @@ function activate(context) {
             return;
         }
     
-        const confirm = await vscode.window.showWarningMessage("Удалить запись?", "Да", "Нет");
+        const confirm = await vscode.window.showWarningMessage(`Удалить запись ${treeItem.data.content} ?`, "Да", "Нет");
         if (confirm !== "Да") return;
     
-        
+        const customTypes = settings.customTypes.map(item => (item + "s").toLowerCase());
     
         const { id, type, prov, path, linepath } = treeItem.data;
         let targetCollection = null;
         let targetKey = null;
-    
-        if (path || treeItem.context.path) {
+        let stillExists = true;
+
+        if (path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath) {
             targetCollection = provider.notesData[prov];
-            targetKey = path || treeItem.context.path;
+            targetKey = path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath;
         }
         if (!targetCollection || !targetKey || !targetCollection[targetKey]) {
             vscode.window.showErrorMessage("Ошибка: Не удалось найти запись.");
@@ -655,21 +913,32 @@ function activate(context) {
         console.log(`✅ Найдена коллекция ${targetKey} для удаления.`);
     
         // Удаляем запись из нужного массива
-        let categories = ["comments", "checklists", "events", "notes"];
-        categories.forEach(category => {
-            if (targetCollection[targetKey][category]) {
-                targetCollection[targetKey][category] = targetCollection[targetKey][category].filter(note => note.id !== id);
+        let categories = ["comments", "checklists", "events", "notes", ...customTypes];
+
+        if(type == "line"){
+            if (targetCollection[targetKey].length){
+                targetCollection[targetKey] = targetCollection[targetKey].filter(note => note.id !== id)
             }
-        });
+
+            stillExists = targetCollection[targetKey] && targetCollection[targetKey].length > 0
+        }else{
+            categories.forEach(category => {
+                if (targetCollection[targetKey][category]) {
+                    targetCollection[targetKey][category] = targetCollection[targetKey][category].filter(note => note.id !== id);
+                }
+            });
+
+            // **Повторно проверяем, остались ли данные**
+            stillExists = categories.some(category =>
+                targetCollection[targetKey][category] && targetCollection[targetKey][category].length > 0
+            );
+        }
+        
     
-        console.log(`✅ Успешно удалено: id=${id}, type=${type}`);
-    
-        // **Повторно проверяем, остались ли данные**
-        const stillExists = categories.some(category =>
-            targetCollection[targetKey][category] && targetCollection[targetKey][category].length > 0
-        );
+        
     
         if (!stillExists) {
+            console.log(`✅ Успешно удалено all: id=${id}, type=${type}`);
             delete targetCollection[targetKey];
         } else {
             console.log(`✅ ${targetKey} НЕ пуст, оставляем.`);
@@ -684,7 +953,7 @@ function activate(context) {
 
     context.subscriptions.push(vscode.commands.registerCommand('protasker.editNoteFromList', async (treeItem) => {
         treeItem.data = treeItem?.data ? treeItem.data : treeItem.context;
-    
+        const settings = getProTaskerSettings();
         if (!treeItem || !treeItem.data || !treeItem.data.id) {
             console.error("❌ Ошибка: Нет данных для изменения!", treeItem);
             vscode.window.showErrorMessage("Ошибка: Неверные данные для изменения.");
@@ -694,6 +963,8 @@ function activate(context) {
         let targetCollection = null;
         let targetKey = null;
         let targetEntry = null;
+
+        const customTypes = settings.customTypes.map(item => (item + "s").toLowerCase())
     
         if (path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath) {
             targetCollection = provider.notesData[prov];
@@ -710,7 +981,7 @@ function activate(context) {
             targetEntry = targetCollection[targetKey].find(note => note.id === id);
         } else {
             // 🔹 Для файлов и директорий ищем в категориях (notes, comments, checklists, events)
-            const categories = ["notes", "comments", "checklists", "events"];
+            const categories = ["notes", "comments", "checklists", "events", ...customTypes];
             for (const category of categories) {
                 if (Array.isArray(targetCollection[targetKey][category])) {
                     targetEntry = targetCollection[targetKey][category].find(note => note.id === id);

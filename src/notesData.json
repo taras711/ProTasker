@@ -5,7 +5,7 @@
         {
           "id": 1742106759667,
           "type": "note",
-          "content": "fghg",
+          "content": "gfhfv gbnh  ghjjghjfcvbd fvdfv fdfv fvd dfvdfvdfv vdv dfvs zfz d zd bxgbngfn dhz d vf",
           "createdAt": "2025-03-16T06:32:39.667Z",
           "deadline": null,
           "prov": "files"
@@ -32,7 +32,7 @@
         {
           "id": 1742106780371,
           "type": "comment",
-          "content": "dfgb",
+          "content": "fhfhtytj",
           "createdAt": "2025-03-16T06:33:00.371Z",
           "deadline": null,
           "prov": "directories"
@@ -50,12 +50,26 @@
         {
           "id": 1742106791806,
           "type": "version",
-          "content": "dfgdf dfgdfg",
+          "content": "hbfgh",
           "createdAt": "2025-03-16T06:33:11.806Z",
           "deadline": null,
           "prov": "directories"
         }
       ]
+    },
+    "c:/users/taras/desktop/projects/app/calengen/service": {
+      "notes": [
+        {
+          "id": 1742115417050,
+          "type": "note",
+          "content": "fgnngn",
+          "createdAt": "2025-03-16T08:56:57.050Z",
+          "deadline": null
+        }
+      ],
+      "comments": [],
+      "checklists": [],
+      "events": []
     }
   },
   "lines": {
@@ -64,7 +78,7 @@
         "line": 51,
         "id": 1742106810041,
         "type": "line",
-        "content": "hgghmg",
+        "content": "ghnmhg hhj,",
         "createdAt": "2025-03-16T06:33:30.041Z"
       },
       {
@@ -73,13 +87,6 @@
         "type": "line",
         "content": "vnvbn",
         "createdAt": "2025-03-16T07:09:16.019Z"
-      },
-      {
-        "line": 61,
-        "id": 1742109135274,
-        "type": "line",
-        "content": "bvnvn",
-        "createdAt": "2025-03-16T07:12:15.274Z"
       }
     ]
   }
