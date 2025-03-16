@@ -73,6 +73,10 @@ The extension is ready to use!
 2. Each checklist contains tasks that can be marked as completed.
 3. Track progress easily from the **ProTasker panel**.
 
+## 📸 Screenshots
+
+
+![ProTasker Panel](icons/Screenshots/2025-03-16%20165011.png) ![Create Note](icons/Screenshots/2025-03-16%20165043.png)
 
 (Screenshots will be added soon)
 
