@@ -23,11 +23,11 @@
             "items": [
               {
                 "text": "sfsd sd",
-                "done": true
+                "done": false
               },
               {
                 "text": "sfd ds sd",
-                "done": true
+                "done": false
               },
               {
                 "text": "gh gfhfgh fhfg",
@@ -189,6 +189,15 @@
         "type": "line",
         "content": "asd asdsaa",
         "createdAt": "2025-03-09T19:13:28.564Z"
+      }
+    ],
+    "c:/users/taras/onedrive/plocha/projects/app/main project/index.html": [
+      {
+        "line": 7,
+        "id": 1742141670448,
+        "type": "line",
+        "content": "rtretetr",
+        "createdAt": "2025-03-16T16:14:30.448Z"
       }
     ]
   }

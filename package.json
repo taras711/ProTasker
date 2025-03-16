@@ -28,7 +28,7 @@
             "uk"
           ],
           "default": "en",
-          "description": "Выбор языка интерфейса"
+          "description": "Choose Interface Language"
         },
         "protasker.customTypes": {
           "type": "array",
@@ -36,7 +36,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "Пользовательские типы записей"
+          "description": "User defined types"
         },
         "protasker.noteDisplay": {
           "type": "string",
@@ -46,28 +46,28 @@
             "inlineText"
           ],
           "default": "icon",
-          "description": "Как отображать заметки в коде"
+          "description": "How to display notes in code"
         },
         "protasker.inlineTextColor": {
           "type": "string",
           "default": "#FFD700",
-          "description": "Цвет inline-текста заметок",
+          "description": "Inline text color for notes",
           "when": "protasker.noteDisplay == 'inlineText'"
         },
         "protasker.highlightColor": {
           "type": "string",
           "default": "#ffeb3b",
-          "description": "Цвет подсветки строк"
+          "description": "Highlight color for notes"
         },
         "protasker.showTimeAgo": {
           "type": "boolean",
           "default": true,
-          "description": "Показывать дату заметок в формате time ago"
+          "description": "Show time ago"
         },
         "protasker.notificatons": {
           "type": "boolean",
           "default": true,
-          "description": "Показывать оповещения"
+          "description": "Notifications"
         }
       }
     },
@@ -76,7 +76,7 @@
         {
           "id": "sidebar_protasker",
           "title": "ProTasker",
-          "icon": "notes.png"
+          "icon": "icons/notes.png"
         }
       ]
     },
@@ -99,21 +99,21 @@
     "commands": [
       {
         "command": "protasker.openSettings",
-        "title": "ProTasker: Открыть настройки",
+        "title": "Open Settings",
         "category": "ProTasker",
         "icon": "$(gear)"
       },
       {
         "command": "protasker.addChecklistItem",
-        "title": "➕ Добавить пункт в чек-лист"
+        "title": "➕ Add Checklist Item"
       },
       {
         "command": "protasker.toggleChecklistItem",
-        "title": "✅ Отметить как выполненное"
+        "title": "✅ Toggle Checklist Item"
       },
       {
         "command": "protasker.removeChecklistItem",
-        "title": "Удалить пункт чек-листа"
+        "title": "❌ Remove Checklist Item"
       },
       {
         "command": "protasker.editNoteFromList",
@@ -149,7 +149,7 @@
       },
       {
         "command": "protasker.deleteNoteFromList",
-        "title": "Delete"
+        "title": "Delete Note from List"
       },
       {
         "command": "protasker.addNote",
@@ -173,7 +173,8 @@
       },
       {
         "command": "protasker.resetSearch",
-        "title": "Сбросить поиск"
+        "title": "Reset Search",
+        "icon": "$(close)"
       },
       {
         "command": "protasker.goToNote",
