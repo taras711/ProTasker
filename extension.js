@@ -23,7 +23,7 @@ function activate(context) {
 
     // setContext
     vscode.window.onDidChangeTextEditorSelection(async event => {
-        await updateLineHasNoteState(event.textEditor, provider); // update setContext
+        await updateLineHasNoteState(event.textEditor); // update setContext
     });
 
     // Initialization highlight commented lines in editor
@@ -60,7 +60,7 @@ function activate(context) {
     // update lineHasNote state
     vscode.window.onDidChangeVisibleTextEditors(async () => {
          if (vscode.window.activeTextEditor) {
-            updateLineHasNoteState(vscode.window.activeTextEditor, provider) // update setContext
+            updateLineHasNoteState(vscode.window.activeTextEditor) // update setContext
         }
     });
     
@@ -78,10 +78,9 @@ function activate(context) {
      * Updates the lineHasNote state and sets the corresponding context variables. 
      * If the editor is not specified, it will use the active editor.
      * @param {import('vscode').TextEditor} editor - The text editor to get the line number from.
-     * @param {NotesExplorer} provider - The notes explorer provider.
      * @return {Promise<void>}
      */
-    async function updateLineHasNoteState(editor, provider) {
+    async function updateLineHasNoteState(editor) {
         if (!editor) return;
 
             // Wait for the document to be fully loaded
@@ -432,7 +431,7 @@ function activate(context) {
         }
 
         // Combining all comments into one text
-        const fullText = lineNotes.map((note, index) => `Type: ${note.type}* \r\n Content: ${note.content}. \r\n Created: ${note.createdAt}`).join("\n\n");
+        const fullText = lineNotes.map((note) => `Type: ${note.type}* \r\n Content: ${note.content}. \r\n Created: ${note.createdAt}`).join("\n\n");
 
         vscode.window.showInformationMessage(`📝 Comments for line ${line}:\n\n${fullText}`, { modal: true });
     });
@@ -517,7 +516,7 @@ function activate(context) {
     
         const customTypes = settings.customTypes.map(item => (item + "s").toLowerCase()); // Get custom note types
     
-        const { id, type, prov, path, linepath } = treeItem.data; // Get note data from the tree item
+        const { id, type, prov, path } = treeItem.data; // Get note data from the tree item
         let targetCollection = null;
         let targetKey = null;
         let stillExists = true;
@@ -577,7 +576,7 @@ function activate(context) {
             vscode.window.showErrorMessage("Error: Note data not found.");
             return;
         }
-        const { id, type, prov, path, linepath } = treeItem.data; // Get note data from the tree item
+        const { id, prov, path } = treeItem.data; // Get note data from the tree item
         let targetCollection = null;
         let targetKey = null;
         let targetEntry = null;
@@ -754,7 +753,7 @@ function activate(context) {
             editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
         } catch (error) {
             // If file does not exist, show an error message
-            vscode.window.showErrorMessage(`File not found: ${fileUri.fsPath}`);
+            vscode.window.showErrorMessage(`File not found: ${fileUri.fsPath} error: ${error}`);
         }
     });
 

@@ -309,9 +309,6 @@ class NoteItem extends vscode.TreeItem {
     }
 }
 
-function getIconPath(context, iconName) {
-    return vscode.Uri.file(path.join(context.extensionPath, 'icons', `${iconName}`));
-}
 
 function formatDeadlineStatus(deadlineDate) {
     if (!deadlineDate) return "";
