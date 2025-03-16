@@ -582,6 +582,7 @@ function activate(context) {
             // Добавляем заметку на эту строку
             provider.addNoteToLine(filePath, lineNumber, "line", noteContent); // Обновляем заметки в данных
             highlightCommentedLines(editor, provider); // 🔄 Обновляем подсветку
+            notesExplorerProvider.refresh();
         }
     });
     
@@ -689,18 +690,18 @@ function activate(context) {
             vscode.window.showErrorMessage("Ошибка: Неверные данные для изменения.");
             return;
         }
-        console.error("❌ Ошибка: Нет данных для изменения!", treeItem);
         const { id, type, prov, path, linepath } = treeItem.data;
         let targetCollection = null;
         let targetKey = null;
         let targetEntry = null;
     
-        if (path || treeItem.context.path) {
+        if (path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath) {
             targetCollection = provider.notesData[prov];
-            targetKey = path || treeItem.context.path;
+            targetKey = path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath;
         }
         if (!targetCollection || !targetKey || !targetCollection[targetKey]) {
             vscode.window.showErrorMessage("Ошибка: Не удалось найти запись.");
+            console.log("Warning: " + targetCollection + " " + targetKey)
             return;
         }
 
@@ -761,6 +762,8 @@ function activate(context) {
     
         console.log(`🔍 Ищем заметки по запросу: "${query}"`);
         provider.searchNotes(query);
+        provider.filteredNotes = null;
+        provider.refresh();
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('protasker.clearSearch', () => {
@@ -826,7 +829,7 @@ function activate(context) {
         }
     
         // Обновление TreeView с результатами фильтрации
-        //provider.searchResults = filteredResults;
+        provider.searchResults = null;
         provider.refresh();  // Обновляем интерфейс
     
     }));

@@ -19,15 +19,11 @@ class Manager{
                 if (!element) {
                     const items = [];
         
-                    if (this.searchResults !== null && this.searchResults.length > 1) {
-                        console.log("📌 Отображаем результаты поиска...", this.searchResults);
-                        
-                        return this.searchResults;
-                    }
                         
                     const directories = Object.keys(this.notesData.directories)
                     .filter(dirPath => 
-                        !this.filteredNotes || this.filteredNotes.some(item => item.parentPath === dirPath && item.type !== "line")
+                        (!this.filteredNotes || this.filteredNotes.some(item => item.parentPath === dirPath && item.type !== "line")) &&
+                        (!this.searchResults || this.searchResults.some(item => item.parentPath === dirPath && item.type !== "line"))
                     )
                     .map(dirPath => {
                         const dirData = this.notesData.directories[dirPath];
@@ -53,7 +49,8 @@ class Manager{
                     
                     const files = Object.keys(this.notesData.files)
                     .filter(filePath => 
-                        !this.filteredNotes || this.filteredNotes.some(item => item.parentPath === filePath && item.type !== "line")
+                        (!this.filteredNotes || this.filteredNotes.some(item => item.parentPath === filePath && item.type !== "line")) &&
+                        (!this.searchResults || this.searchResults.some(item => item.parentPath === filePath && item.type !== "line"))
                     )
                     .map(filePath => {
                         const fileData = this.notesData.files[filePath];
@@ -77,11 +74,12 @@ class Manager{
                         );
                     });
 
-                    console.log("📌 Отображаем результаты поиска lines...", this.filteredNotes);
+                    console.log("📌 Отображаем результаты поиска...", this.searchResults);
                     
                     const lines = Object.keys(this.notesData.lines)
                     .filter(filePath => 
-                        !this.filteredNotes || this.filteredNotes.some(item => item.parentPath === filePath && item.type == "line")
+                        (!this.filteredNotes || this.filteredNotes.some(item => item.parentPath === filePath && item.type == "line")) &&
+                        (!this.searchResults || this.searchResults.some(item => item.parentPath === filePath && item.type == "line"))
                     )
                     .map(filePath => {
                         if (this.viewId !== null && filePath !== file) return;
@@ -103,9 +101,10 @@ class Manager{
                     }
         
                     // Добавление элемента для сброса фильтра, если фильтрация активна
-                    if (this.filteredNotes) {
+                    if (this.filteredNotes || this.searchResults) {
+                        const label = this.filteredNotes ? "Сбросить фильтр" : "Сбросить поиск"
                         const resetSearchItem = new NoteItem(
-                            "Сбросить фильтр",
+                            label,
                             vscode.TreeItemCollapsibleState.None,
                             {contextValue: "resetSearch", icon: "close"}
                         );
@@ -128,7 +127,8 @@ class Manager{
                             (Array.isArray(notes) ? notes : [])
                             .filter(note => {
                                 const isFound = !this.filteredNotes || this.filteredNotes.some(item => item.id === note.id);
-                                return isFound;
+                                const searchFound = !this.searchResults || this.searchResults.some(item => item.id === note.id)
+                                return isFound && searchFound;
                             })
                             .map(note => {
                                 note.prov = "directories";
@@ -153,7 +153,8 @@ class Manager{
                             (Array.isArray(notes) ? notes : [])
                             .filter(note => {
                                 const isFound = !this.filteredNotes || this.filteredNotes.some(item => item.id === note.id);
-                                return isFound;
+                                const searchFound = !this.searchResults || this.searchResults.some(item => item.id === note.id)
+                                return isFound && searchFound;
                             })
                             .map(note => {
                                 const totalItems = note.type == "checklist" ? note.content.items.length : null;
@@ -180,7 +181,8 @@ class Manager{
                     return this.notesData.lines[filePath]
                     .filter(note => {
                         const isFound = !this.filteredNotes || this.filteredNotes.some(item => item.id === note.id);
-                        return isFound;
+                        const searchFound = !this.searchResults || this.searchResults.some(item => item.id === note.id)
+                        return isFound && searchFound;
                     })
                     .map(note =>
                         new NoteItem(`Line ${note.line}: ${note.content}`, vscode.TreeItemCollapsibleState.Collapsed, { ...note, prov: "lines", path: filePath,  contextValue: "line", linepath: filePath, icon: "pinned-dirty"})
