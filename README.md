@@ -77,8 +77,6 @@ The extension is ready to use!
 
 ![ProTasker Panel](icons/Screenshots/2025-03-16%20165011.png) ![Create Note](icons/Screenshots/2025-03-16%20165043.png)
 
-(Screenshots will be added soon)
-
 ## ⚙️ Settings & Configuration
 
 The settings file can be found in **settings.json**:
