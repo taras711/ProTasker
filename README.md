@@ -1,4 +1,3 @@
-```markdown
 # 📌 ProTasker – VS Code Extension
 
 **ProTasker** is a powerful VS Code extension designed for managing notes, tasks, comments, and events within your code. It helps you organize your workflow, track code changes, and manage your work processes directly from the editor.
