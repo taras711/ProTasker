@@ -131,5 +131,3 @@ This project is licensed under the **MIT License**. See the full license in the 
 - **VS Code API** – For providing an excellent platform.
 - **Open Source Community** – For contributions and support.
 ```
-
-This version uses a clean, easy-to-read format with sections for features, installation, usage, development, and contributions. It includes placeholders for screenshots, making it ready for when those images are added. Let me know if you'd like to adjust or add anything further!
