@@ -19,15 +19,11 @@ class Manager{
                 if (!element) {
                     const items = [];
         
-                    if (this.searchResults !== null && this.searchResults.length > 1) {
-                        console.log("📌 Отображаем результаты поиска...", this.searchResults);
-                        
-                        return this.searchResults;
-                    }
                         
                     const directories = Object.keys(this.notesData.directories)
                     .filter(dirPath => 
-                        !this.filteredNotes || this.filteredNotes.some(item => item.parentPath === dirPath && item.type !== "line")
+                        (!this.filteredNotes || this.filteredNotes.some(item => item.parentPath === dirPath && item.type !== "line")) &&
+                        (!this.searchResults || this.searchResults.some(item => item.parentPath === dirPath && item.type !== "line"))
                     )
                     .map(dirPath => {
                         const dirData = this.notesData.directories[dirPath];
@@ -36,8 +32,7 @@ class Manager{
                         const hasDeadline = Object.values(dirData)
                             .filter(Array.isArray)
                             .flat()
-                            .some(note => note?.deadline);
-                        
+                            .some(note => note?.deadline && Boolean(note.deadline));
                         const totalRecords = Object.values(dirData)
                             .filter(Array.isArray)
                             .reduce((sum, category) => sum + category.length, 0);
@@ -53,7 +48,8 @@ class Manager{
                     
                     const files = Object.keys(this.notesData.files)
                     .filter(filePath => 
-                        !this.filteredNotes || this.filteredNotes.some(item => item.parentPath === filePath && item.type !== "line")
+                        (!this.filteredNotes || this.filteredNotes.some(item => item.parentPath === filePath && item.type !== "line")) &&
+                        (!this.searchResults || this.searchResults.some(item => item.parentPath === filePath && item.type !== "line"))
                     )
                     .map(filePath => {
                         const fileData = this.notesData.files[filePath];
@@ -62,8 +58,8 @@ class Manager{
                         const hasDeadline = Object.values(fileData)
                             .filter(Array.isArray)
                             .flat()
-                            .some(note => note?.deadline);
-                    
+                            .some(note => note?.deadline && Boolean(note.deadline)) ;
+                        console.log("deadline:", hasDeadline)
                         const totalRecords = Object.values(fileData)
                             .filter(Array.isArray)
                             .reduce((sum, category) => sum + category.length, 0);
@@ -71,23 +67,24 @@ class Manager{
                         if (this.viewId !== null && filePath !== file) return;
                         
                         return new NoteItem(
-                            `${hasDeadline ? `(🔔)` : ""} ${path.basename(filePath)}`,
+                            `${hasDeadline? `(🔔)` : ""} ${path.basename(filePath)}`,
                             vscode.TreeItemCollapsibleState.Collapsed,
                             { count: totalRecords, file: filePath, prov: "directories", contextValue: "file", icon: "file"}
                         );
                     });
 
-                    console.log("📌 Отображаем результаты поиска lines...", this.filteredNotes);
+                    console.log("📌 Отображаем результаты поиска...", this.searchResults);
                     
                     const lines = Object.keys(this.notesData.lines)
                     .filter(filePath => 
-                        !this.filteredNotes || this.filteredNotes.some(item => item.parentPath === filePath && item.type == "line")
+                        (!this.filteredNotes || this.filteredNotes.some(item => item.parentPath === filePath && item.type == "line")) &&
+                        (!this.searchResults || this.searchResults.some(item => item.parentPath === filePath && item.type == "line"))
                     )
                     .map(filePath => {
                         if (this.viewId !== null && filePath !== file) return;
                     
                         // 🔍 Проверка наличия оповещений
-                        const hasDeadline = this.notesData.lines[filePath].some(note => note?.deadline);
+                        const hasDeadline = this.notesData.lines[filePath].some(note => note?.deadline && Boolean(note.deadline));
                         return new NoteItem(
                             `${hasDeadline ? "(🔔)" : ""} ${path.basename(filePath)}`,
                             vscode.TreeItemCollapsibleState.Collapsed,
@@ -103,9 +100,10 @@ class Manager{
                     }
         
                     // Добавление элемента для сброса фильтра, если фильтрация активна
-                    if (this.filteredNotes) {
+                    if (this.filteredNotes || this.searchResults) {
+                        const label = this.filteredNotes ? "Сбросить фильтр" : "Сбросить поиск"
                         const resetSearchItem = new NoteItem(
-                            "Сбросить фильтр",
+                            label,
                             vscode.TreeItemCollapsibleState.None,
                             {contextValue: "resetSearch", icon: "close"}
                         );
@@ -128,7 +126,8 @@ class Manager{
                             (Array.isArray(notes) ? notes : [])
                             .filter(note => {
                                 const isFound = !this.filteredNotes || this.filteredNotes.some(item => item.id === note.id);
-                                return isFound;
+                                const searchFound = !this.searchResults || this.searchResults.some(item => item.id === note.id)
+                                return isFound && searchFound;
                             })
                             .map(note => {
                                 note.prov = "directories";
@@ -153,7 +152,8 @@ class Manager{
                             (Array.isArray(notes) ? notes : [])
                             .filter(note => {
                                 const isFound = !this.filteredNotes || this.filteredNotes.some(item => item.id === note.id);
-                                return isFound;
+                                const searchFound = !this.searchResults || this.searchResults.some(item => item.id === note.id)
+                                return isFound && searchFound;
                             })
                             .map(note => {
                                 const totalItems = note.type == "checklist" ? note.content.items.length : null;
@@ -180,7 +180,8 @@ class Manager{
                     return this.notesData.lines[filePath]
                     .filter(note => {
                         const isFound = !this.filteredNotes || this.filteredNotes.some(item => item.id === note.id);
-                        return isFound;
+                        const searchFound = !this.searchResults || this.searchResults.some(item => item.id === note.id)
+                        return isFound && searchFound;
                     })
                     .map(note =>
                         new NoteItem(`Line ${note.line}: ${note.content}`, vscode.TreeItemCollapsibleState.Collapsed, { ...note, prov: "lines", path: filePath,  contextValue: "line", linepath: filePath, icon: "pinned-dirty"})
@@ -236,7 +237,7 @@ class NoteItem extends vscode.TreeItem {
         let converToTimeago = context?.createdAt ? new Date(context.createdAt).toLocaleString() : "", description = "";
         super(label, collapsibleState);
         this.context = context;
-        this.tooltip = context.content || label;
+        
         this.notifiedDeadlines = new Set();
         
         this.contextValue = this.context.contextValue || context.type || "unknown";
@@ -244,9 +245,10 @@ class NoteItem extends vscode.TreeItem {
         this.filepath = this.context.filepath || null
         this.linepath = this.context.linepath || null
         if(context.createdAt){
-            if(settings.showTimeAgo) converToTimeago = timeago.format(new Date(context.createdAt)) || ""
+            if(settings.showTimeAgo) converToTimeago = `| ${timeago.format(new Date(context.createdAt))}` || ""
         }
 
+        this.tooltip = `${((typeof context.content == "object" ? context.name : context.content) || label)} ${converToTimeago}`;
         description = context?.count ? `(${context.count})` : (`${context.type ? `(${context.type})` : ""} ${converToTimeago}`)
         
         this.description = description;
@@ -290,13 +292,13 @@ function formatDeadlineStatus(deadlineDate) {
     let statusText = "";
 
     if (diffTime < 0) {
-        statusText = `🔴 Просрочено (${Math.abs(diffDays)} дн. назад)`;
+        statusText = `🔴 Overdue (${Math.abs(diffDays)} days ago)`;
     } else if (diffDays === 0) {
-        statusText = `🟡 Сегодня!`;
+        statusText = `🟡 Today!`;
     } else if (diffDays === 1) {
-        statusText = `🟢 Завтра`;
+        statusText = `🟢 Tomorrow`;
     } else {
-        statusText = `🟢 Осталось ${diffDays} дн.`;
+        statusText = `🟢 Left ${diffDays} days.`;
     }
 
     return `${statusText}: ${deadline.toLocaleString()}`;

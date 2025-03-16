@@ -160,76 +160,72 @@ class NotesExplorer extends Manager{
     }
 
     searchNotes(query) {
-        query = query.toLowerCase().trim();
+        const results = [];
+        const settings = getProTaskerSettings();
+
+        const searchInItem = (item, parentPath, category) => {
+            const queryLower = query.toLowerCase();
+            
     
-        let results = [];
-    
-        const searchInCollection = (collection, parentPath = "") => {
-            Object.entries(collection).forEach(([path, data]) => {
-                const categories = ["notes", "comments", "checklists", "events"];
-                categories.forEach(category => {
-                    if (Array.isArray(data[category])) {
-                        data[category].forEach(note => {
-                            if (typeof note.content === "string" && note.content.toLowerCase().includes(query)) {
-                                console.log(`✅ Найдена запись: ${note.content}`);  // Добавим логирование
-                                results.push(new this.noteItem(
-                                    `🔍 ${category.toUpperCase()}: ${note.content}`,
-                                    vscode.TreeItemCollapsibleState.None,
-                                    { ...note, parentPath, contextValue: "noteItem" }
-                                ));
+            // Рекурсивный поиск во всех значениях объекта
+            const searchInObject = (obj) => {
+                for (const key in obj) {
+                    if (typeof obj[key] === "string" && obj[key].toLowerCase().includes(queryLower)) {
+                        results.push({ ...item, parentPath, category });
+                        return; // Достаточно одного совпадения
+                    } else if (Array.isArray(obj[key])) {
+                        for (const subItem of obj[key]) {
+                            if (typeof subItem === "string" && subItem.toLowerCase().includes(queryLower)) {
+                                results.push({ ...item, parentPath, category });
+                                return;
+                            } else if (typeof subItem === "object") {
+                                searchInObject(subItem);
                             }
-    
-                            // Дополнительная проверка для чеклистов
-                            if (category === "checklists" && Array.isArray(note.content.items)) {
-                                note.content.items.forEach(item => {
-                                    if (item.text.toLowerCase().includes(query)) {
-                                        console.log(`✅ Найден пункт чеклиста: ${item.text}`);
-                                        results.push(new this.noteItem(
-                                            `🔍 CHECKLIST: ${note.content.name} → ${item.text}`,
-                                            vscode.TreeItemCollapsibleState.None,
-                                            { ...item, checklistId: note.id, index: note.content.items.indexOf(item), parentPath, contextValue: "checklistItem" }
-                                        ));
-                                    }
-                                });
-                            }
-                        });
+                        }
+                    } else if (typeof obj[key] === "object") {
+                        searchInObject(obj[key]);
                     }
-                });
-            });
+                }
+            };
+    
+            searchInObject(item);
+        };
+
+        const customTypes = settings.customTypes.map(item => (item + "s").toLowerCase());
+
+        const mapTypes = ["notes", "comments", "checklists", "events", ...customTypes]
+    
+        // Общая функция поиска по категориям
+        const searchInCategory = (category) => {
+            for (const [path, data] of Object.entries(this.notesData[category])) {
+                if(category == "lines"){
+                    for (const item of data) {
+                        searchInItem(item, path, category);
+                    }
+                }else{
+                    for (const type of mapTypes) {
+                        if (data[type]) {
+                            for (const item of data[type]) {
+                                searchInItem(item, path, category);
+                            }
+                        }
+                    }
+                }
+                
+            }
         };
     
-        // 🔎 Ищем в файлах, директориях и строках
-        searchInCollection(this.notesData.files);
-        searchInCollection(this.notesData.directories);
-        Object.entries(this.notesData.lines).forEach(([path, notes]) => {
-            notes.forEach(note => {
-                if (typeof note.content === "string" && note.content.toLowerCase().includes(query)) {
-                    console.log(`✅ Найдена строка: ${note.content}`);
-                    results.push(new this.noteItem(
-                        `🔍 LINE ${note.line}: ${note.content}`,
-                        vscode.TreeItemCollapsibleState.None,
-                        { ...note, parentPath: path, contextValue: "noteItem" }
-                    ));
-                }
-            });
-        });
-    
-        results.push(new this.noteItem(
-            "❌ Сбросить поиск", 
-            vscode.TreeItemCollapsibleState.None, 
-            { contextValue: "resetSearch" }
-        ));
-    
-        console.log(`🔹 Найдено результатов: ${results.length}`);
+        // Ищем во всех категориях
+        searchInCategory("files");
+        searchInCategory("directories");
+        searchInCategory("lines");
+
         
-        if (results.length === 0) {
-            vscode.window.showInformationMessage("😕 Ничего не найдено по запросу.");
-        }
     
         this.searchResults = results;
-        this.search = true;
-        this.refresh();  // Обновляем TreeView с результатами поиска
+        
     }
+    
     
     filterNotes(type, category) {
         const settings = getProTaskerSettings();
@@ -266,7 +262,7 @@ class NotesExplorer extends Manager{
         };
 
     
-        const types = ["notes", "comments", "checklists", "events", "line", ...customTypesLowerCase];
+        const types = ["notes", "comments", "checklists", "events", "Lines", ...customTypesLowerCase];
         
         const filterByType = (items) => {
             if (!type || type === 'all') return items;
@@ -284,7 +280,7 @@ class NotesExplorer extends Manager{
         }
     console.log("types:", category)
         categoryFilteredData.forEach(([dataPath, data]) => {
-            if (category === "lines") {
+            if (category === "lines" || (type == "line" && category == "all")) {
                 console.log("Обрабатываем категорию 'lines'");
     
                 // Если данные для строки существуют и это массив
@@ -296,12 +292,10 @@ class NotesExplorer extends Manager{
                         results.push(...filteredItems.map(note => ({ ...note, parentPath: dataPath })));
                     }
                 }
-                return;
             }
-    
+
             types.forEach(categoryKey => {
                 if (!Array.isArray(data[categoryKey])) return;
-                console.log("Отфильтрованные элементы для 'lines':", data);
                 const filteredItems = filterByType(data[categoryKey]);
                 if (filteredItems.length > 0) {
                     results.push(...filteredItems.map(note => ({ ...note, parentPath: dataPath })));
@@ -372,7 +366,7 @@ class NotesExplorer extends Manager{
         this._onDidChangeTreeData.fire();
     }
 
-    async addEntry(targetPath, isDirectory = false, entryType, noteContent, deadline = "false") {
+    async addEntry(targetPath, isDirectory = false, entryType, noteContent, deadline = false) {
         const typeKey = entryType.toLowerCase() + "s"; // Пример: "notes", "comments", "checklists", "events"
         
         

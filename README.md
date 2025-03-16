@@ -1,65 +1,136 @@
-# protasker README
+```markdown
+# 📌 ProTasker – VS Code Extension
 
-This is the README for your extension "protasker". After writing up a brief description, we recommend including the following sections.
+**ProTasker** is a powerful VS Code extension designed for managing notes, tasks, comments, and events within your code. It helps you organize your workflow, track code changes, and manage your work processes directly from the editor.
 
-## Features
+## 🚀 Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- ✅ **Create and manage notes** in code, files, and folders.
+- ✅ **Add comments** to specific lines of code.
+- ✅ **Create checklists** to organize tasks.
+- ✅ **Log events** related to files and projects.
+- ✅ **Structured tree view** of all records in the side panel.
+- ✅ **Search & filter notes** by keywords.
+- ✅ Flexible data storage in **JSON format**.
+- ✅ **Icons and context menus** for seamless navigation.
+- ✅ **Localization support** (English, Russian, Ukrainian).
+- ✅ **User settings** for custom record types, color schemes, and UI behavior.
 
-For example if there is an image subfolder under your extension project workspace:
+## 📥 Installation
 
-\!\[feature X\]\(images/feature-x.png\)
+### 📌 1. Install from Marketplace (Coming Soon)
+1. Open **VS Code**.
+2. Go to **Extensions** (`Ctrl+Shift+X`).
+3. Search for **ProTasker**.
+4. Click **Install**.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+The extension is ready to use!
 
-## Requirements
+### 📌 2. Manual Installation (From Source Code)
+1. Clone the repository:
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+   ```bash
+   git clone https://github.com/taras711/ProTasker.git
+   ```
 
-## Extension Settings
+2. Navigate to the project folder:
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+   ```bash
+   cd ProTasker
+   ```
 
-For example:
+3. Install dependencies:
 
-This extension contributes the following settings:
+   ```bash
+   npm install
+   ```
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+4. Launch the extension in **VS Code**:
 
-## Known Issues
+   ```bash
+   code .
+   ```
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+5. Press **F5** to start in development mode.
 
-## Release Notes
+## 📖 How to Use?
 
-Users appreciate release notes as you update your extension.
+### 🔹 Creating Notes, Comments, or Checklists
+1. Right-click in your code.
+2. Select **"Add Note / Comment / Checklist"**.
+3. Enter the text and save it.
 
-### 1.0.0
+### 🔹 Viewing All Entries
+1. Open the **ProTasker side panel**.
+2. See all notes, comments, and checklists organized in a tree structure.
 
-Initial release of ...
+### 🔹 Filtering & Searching
+1. Use the search bar to find specific records.
+2. Filter entries by type (**note**, **comment**, **checklist**, **event**).
 
-### 1.0.1
+### 🔹 Working with Checklists
+1. Create a checklist from the context menu.
+2. Each checklist contains tasks that can be marked as completed.
+3. Track progress easily from the **ProTasker panel**.
 
-Fixed issue #.
 
-### 1.1.0
+(Screenshots will be added soon)
 
-Added features X, Y, and Z.
+## ⚙️ Settings & Configuration
 
----
+The settings file can be found in **settings.json**:
 
-## Working with Markdown
+```json
+{
+  "protasker.language": "en",
+  "protasker.showPinned": true,
+  "protasker.noteIcon": "📌"
+}
+```
 
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
+### Available Options:
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
+- `"language"` – Select language (**"en"**, **"ru"**, **"ua"**).
+- `"showPinned"` – Show pinned notes (**true/false**).
+- `"noteIcon"` – Choose an icon for notes.
 
-## For more information
+## 🛠 Development & Contributions
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+Want to contribute? Follow these steps:
 
-**Enjoy!**
+1. Fork the repository.
+2. Create a new branch:
+
+   ```bash
+   git checkout -b feature-branch
+   ```
+
+3. Make changes and commit:
+
+   ```bash
+   git commit -m "Description of changes"
+   ```
+
+4. Submit a **pull request**.
+
+## 📌 Roadmap
+
+- ✔ Integration with **cloud services**.
+- ✔ Advanced **UI settings**.
+- ✔ **Cross-device sync** support.
+- ✔ **Widgets** on the VS Code home screen.
+
+## 📜 License
+
+This project is licensed under the **MIT License**. See the full license in the **LICENSE** file.
+
+## 👥 Authors & Acknowledgments
+
+**Main Developer**: [Taras711](https://github.com/taras711)
+
+### Special Thanks:
+- **VS Code API** – For providing an excellent platform.
+- **Open Source Community** – For contributions and support.
+```
+
+This version uses a clean, easy-to-read format with sections for features, installation, usage, development, and contributions. It includes placeholders for screenshots, making it ready for when those images are added. Let me know if you'd like to adjust or add anything further!

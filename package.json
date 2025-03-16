@@ -113,15 +113,15 @@
       },
       {
         "command": "protasker.removeChecklistItem",
-        "title": "❌ Удалить пункт чек-листа"
+        "title": "Удалить пункт чек-листа"
       },
       {
         "command": "protasker.editNoteFromList",
-        "title": "✏️ Edit Note"
+        "title": "Edit Note"
       },
       {
         "command": "protasker.openComment",
-        "title": "📜 Open Comment"
+        "title": "Open Comment"
       },
       {
         "command": "protasker.openNotesExplorer",
@@ -137,19 +137,19 @@
       },
       {
         "command": "protasker.editNote",
-        "title": "✏️ Edit Note"
+        "title": "Edit Note"
       },
       {
         "command": "protasker.deleteNote",
-        "title": "🗑️ Delete Note"
+        "title": "Delete Note"
       },
       {
         "command": "protasker.deleteNoteFromLine",
-        "title": "🗑️ Delete Note from Line"
+        "title": "Delete Note from Line"
       },
       {
         "command": "protasker.deleteNoteFromList",
-        "title": "🗑️ Delete"
+        "title": "Delete"
       },
       {
         "command": "protasker.addNote",
@@ -177,12 +177,12 @@
       },
       {
         "command": "protasker.goToNote",
-        "title": "Перейти к записи",
+        "title": "Go to line",
         "category": "ProTasker"
       },
       {
         "command": "protasker.goToFile",
-        "title": "Open file",
+        "title": "Go to file",
         "category": "ProTasker"
       },
       {
