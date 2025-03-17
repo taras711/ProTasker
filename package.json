@@ -24,8 +24,8 @@
           "type": "string",
           "enum": [
             "en",
-            "ru",
-            "uk"
+            "cz",
+            "ua"
           ],
           "default": "en",
           "description": "Choose Interface Language"

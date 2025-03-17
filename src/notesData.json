@@ -1,5 +1,222 @@
 {
-  "files": {},
-  "directories": {},
-  "lines": {}
+  "files": {
+    "c:/users/taras/onedrive/plocha/projects/app/calengen/ui.view.view.class.js": {
+      "notes": [
+        {
+          "id": 1740823115946,
+          "type": "note",
+          "content": "rfregerge",
+          "createdAt": "2025-03-01T09:58:35.946Z",
+          "path": "c:/users/taras/onedrive/plocha/projects/app/calengen/ui.view.view.class.js",
+          "prov": "files"
+        }
+      ],
+      "comments": [],
+      "checklists": [
+        {
+          "id": 1740819320973,
+          "type": "checklist",
+          "content": {
+            "id": 1740819320973,
+            "name": "retet ert",
+            "type": "checklist",
+            "items": [
+              {
+                "text": "sfsd sd",
+                "done": false
+              },
+              {
+                "text": "sfd ds sd",
+                "done": true
+              },
+              {
+                "text": "gh gfhfgh fhfg",
+                "done": false
+              }
+            ],
+            "createdAt": "2025-03-01T08:55:20.973Z"
+          },
+          "createdAt": "2025-03-01T08:55:20.973Z",
+          "path": "c:/users/taras/onedrive/plocha/projects/app/calengen/ui.view.view.class.js",
+          "prov": "files"
+        }
+      ],
+      "events": []
+    },
+    "c:/users/taras/onedrive/plocha/projects/app/calengen/settings.json": {
+      "notes": [],
+      "comments": [],
+      "checklists": [],
+      "events": [
+        {
+          "id": 1740920347637,
+          "type": "event",
+          "content": "G ERGTHTRF H",
+          "categories": "2025-03-02T13:00:00.000Z",
+          "createdAt": "2025-03-02T12:59:07.637Z",
+          "deadline": "2025-03-02T13:00:00.000Z",
+          "prov": "files"
+        },
+        {
+          "id": 1740920525012,
+          "type": "event",
+          "content": "fdsfdsf",
+          "categories": "2025-03-02T13:15:00.000Z",
+          "createdAt": "2025-03-02T13:02:05.012Z",
+          "deadline": "2025-03-02T13:15:00.000Z",
+          "prov": "files"
+        }
+      ]
+    },
+    "c:/users/taras/onedrive/plocha/projects/app/caled.v1.7/class.service-caled.js": {
+      "notes": [],
+      "comments": [
+        {
+          "id": 1742221434624,
+          "type": "comment",
+          "content": "fdg dgdfg df",
+          "createdAt": "2025-03-17T14:23:54.624Z",
+          "deadline": false,
+          "prov": "files"
+        }
+      ],
+      "checklists": [],
+      "events": [],
+      "mains": [
+        {
+          "id": 1741546658436,
+          "type": "main",
+          "content": "fghgf hgf",
+          "createdAt": "2025-03-09T18:57:38.436Z",
+          "deadline": null,
+          "prov": "files"
+        }
+      ]
+    },
+    "c:/users/taras/desktop/projects/app/calengen/ui.view.view.class.js": {
+      "notes": [],
+      "comments": [],
+      "checklists": [],
+      "events": [],
+      "versions": [
+        {
+          "id": 1742013729179,
+          "type": "version",
+          "content": "dfbdfb",
+          "createdAt": "2025-03-15T04:42:09.179Z",
+          "deadline": null,
+          "prov": "files"
+        }
+      ]
+    }
+  },
+  "directories": {
+    "c:/users/taras/onedrive/plocha/projects/app/calengen/design": {
+      "notes": [],
+      "comments": [],
+      "checklists": [
+        {
+          "id": 1740823401403,
+          "type": "checklist",
+          "content": {
+            "id": 1740823401402,
+            "name": "dfg g reg rreg",
+            "type": "checklist",
+            "items": [
+              {
+                "text": "drg rg dgr",
+                "done": false
+              },
+              {
+                "text": "drg rg drg",
+                "done": false
+              }
+            ],
+            "createdAt": "2025-03-01T10:03:21.402Z"
+          },
+          "createdAt": "2025-03-01T10:03:21.403Z",
+          "path": "c:/users/taras/onedrive/plocha/projects/app/calengen/design",
+          "prov": "directories"
+        }
+      ],
+      "events": []
+    },
+    "c:/users/taras/onedrive/plocha/projects/app/calengen": {
+      "notes": [
+        {
+          "id": 1741440455764,
+          "type": "note",
+          "content": "awdawd aw",
+          "createdAt": "2025-03-08T13:27:35.764Z",
+          "deadline": null,
+          "prov": "directories"
+        }
+      ],
+      "comments": [],
+      "checklists": [],
+      "events": []
+    },
+    "c:/users/taras/onedrive/plocha/projects/app/caled.v1.7/misc": {
+      "notes": [],
+      "comments": [],
+      "checklists": [],
+      "events": [],
+      "versions": [
+        {
+          "id": 1742062212378,
+          "type": "version",
+          "content": "sdfdsff sdfsd ",
+          "createdAt": "2025-03-15T18:10:12.378Z",
+          "deadline": null,
+          "prov": "directories"
+        }
+      ]
+    }
+  },
+  "lines": {
+    "c:/users/taras/onedrive/plocha/projects/app/calengen/design/app.css": [
+      {
+        "line": 1,
+        "id": 1740825905415,
+        "type": "line",
+        "content": "ewdfewf",
+        "createdAt": "2025-03-01T10:45:05.415Z",
+        "path": "c:/users/taras/onedrive/plocha/projects/app/calengen/design/app.css"
+      }
+    ],
+    "c:/users/taras/onedrive/plocha/projects/app/calengen/ui.view.view.class.js": [
+      {
+        "line": 48,
+        "id": 1741547601212,
+        "type": "line",
+        "content": "rfgrg",
+        "createdAt": "2025-03-09T19:13:21.212Z"
+      },
+      {
+        "line": 45,
+        "id": 1741547608564,
+        "type": "line",
+        "content": "asd asdsaa",
+        "createdAt": "2025-03-09T19:13:28.564Z"
+      }
+    ],
+    "c:/users/taras/onedrive/plocha/projects/app/main project/index.html": [
+      {
+        "line": 7,
+        "id": 1742141670448,
+        "type": "line",
+        "content": "es fsef e sef",
+        "createdAt": "2025-03-16T16:14:30.448Z"
+      }
+    ],
+    "c:/users/taras/onedrive/plocha/projects/app/caled.v1.7/class.service-caled.js": [
+      {
+        "line": 11,
+        "id": 1742155656622,
+        "type": "line",
+        "content": "sfdf dsfsd",
+        "createdAt": "2025-03-16T20:07:36.622Z"
+      }
+    ]
+  }
 }

@@ -3,7 +3,7 @@ const path = require('path');
 const vscode = require('vscode');
 const timeago = require('timeago.js');
 const { NoteManager } = require("./manager");
-
+const { I18nManager } = require("./i18nManager");
 /**
  * NotesExplorer Class
  * 
@@ -31,7 +31,9 @@ const { NoteManager } = require("./manager");
  * @see {@link https://code.visualstudio.com/api/references/vscode-api | VS Code API}
  */
 
+
 class NotesExplorer extends NoteManager{
+
     constructor(context) {
         
         super();
@@ -46,7 +48,7 @@ class NotesExplorer extends NoteManager{
         this.searchResults = null; // Search results
         this.search = false; // Search active
 
-        
+        this.lang = new I18nManager();
     }
 
     /**
@@ -102,7 +104,7 @@ class NotesExplorer extends NoteManager{
         if (element.contextValue === "checklistItem") {
             treeItem.command = {
                 command: "protasker.toggleChecklistItem",
-                title: "Toggle Checklist Item",
+                title: this.lang.translite("user_strings.toggle_checklist"),
                 arguments: [element] // Add the element as an argument
             };
         }
@@ -117,9 +119,9 @@ class NotesExplorer extends NoteManager{
             // Add a command to reset the search
             treeItem.command = {
                 command: "protasker.resetSearch",
-                title: "Сбросить поиск"
+                title: this.lang.translite("user_strings.reset_search")
             };
-            treeItem.tooltip = "Click to reset search"; // Set the tooltip
+            treeItem.tooltip = `${this.lang.translite("user_strings.click_to")} ${this.lang.translite("user_strings.reset_search")}`; // Set the tooltip
             treeItem.contextValue = "resetSearch"; // Set the context value
         }
         

@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 const path = require('path');
 const timeago = require('timeago.js');
+const { I18nManager } = require("./i18nManager");
 
 /**
  * This class is responsible for managing notes, comments, checklists, and events for a given view.
@@ -22,7 +23,7 @@ class NoteManager{
         this.filteredNotes = null; // Filtered notes
         this.noteItem = NoteItem; // Note item
         this.context = null; // Context
-
+        this.lang = new I18nManager();
         
     }
 
@@ -126,12 +127,12 @@ class NoteManager{
 
             // Check if allItems is empty
             if (allItems.length == 0) {
-                allItems.push(new NoteItem("📭 No notes", vscode.TreeItemCollapsibleState.None));
+                allItems.push(new NoteItem(`📭 ${this.lang.translite('user_strings.no_notes')}`, vscode.TreeItemCollapsibleState.None));
             }
         
             // Add reset search item if needed
             if (this.filteredNotes || this.searchResults) {
-                const label = this.filteredNotes ? "Reset the filter" : "Reset the search";
+                const label = this.filteredNotes ? this.lang.translite("user_strings.reset_filter") : this.lang.translite("user_strings.reset_search");
                 const resetSearchItem = new NoteItem(
                     label,
                     vscode.TreeItemCollapsibleState.None,
@@ -160,17 +161,21 @@ class NoteManager{
                         })
                         .map(note => {
                             // Return the NoteItem object
+                            const totalItems = note.type == "checklist" ? note.content.items.length : null; // Get total items
+                            const completedItems = note.type == "checklist" ? note.content.items.filter(item => item.done).length : null; // Get completed items
+                            const progress = note.type == "checklist" ? totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0 : null; // Get progress
+                            const color = note.type == "checklist" ? getProgressColor(progress) : null; // Get color
                             note.prov = "directories"; // Set provider
 
                             // Set label
                             const label = note.type === 'checklist' 
-                                ? `📋 ${note.content.name || 'Checklist'}`
+                                ? `${note.content.name} (${totalItems}, ${color} ${progress}%)` || 'Checklist'
                                 : note.content;
                                 
                             // Return the NoteItem object
                             return new NoteItem(label, 
                                 note.type === 'checklist' ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Collapsed, 
-                                { ...note, contextValue: note.type === 'checklist' ? 'checklist' : "noteItem", dirpath: element.context.directory, icon: note.type === 'checklist' ? "tasklist" : "notebook" }
+                                { ...note, contextValue: note.type === 'checklist' ? 'checklist' : "noteItem", dirpath: element.context.directory, icon: getIcon(note.type) }
                             );
                         })
                 );
@@ -204,7 +209,7 @@ class NoteManager{
                         // Return the NoteItem object
                         return new NoteItem(label, 
                             note.type === 'checklist' ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Collapsed, 
-                            { ...note, contextValue: note.type === 'checklist' ? "checklist" : "noteItem", filepath: element.context.file, icon: note.type === 'checklist' ? "tasklist" : "notebook"}
+                            { ...note, contextValue: note.type === 'checklist' ? "checklist" : "noteItem", filepath: element.context.file, icon: getIcon(note.type) }
                         );
                     })
                 );
@@ -222,7 +227,7 @@ class NoteManager{
                     return isFound && searchFound;
                 })
                 .map(note =>
-                    new NoteItem(`Line ${note.line}: ${note.content}`, vscode.TreeItemCollapsibleState.Collapsed, { ...note, prov: "lines", path: filePath,  contextValue: "line", linepath: filePath, icon: "pinned-dirty"})
+                    new NoteItem(`Line ${note.line}: ${note.content}`, vscode.TreeItemCollapsibleState.Collapsed, { ...note, prov: "lines", path: filePath,  contextValue: "line", linepath: filePath, icon: getIcon(note.type) })
                 );
         }
         
@@ -230,7 +235,7 @@ class NoteManager{
         if (element.context.type === 'checklist') {
             // If the element is a checklist
             if (!element.context.content || !element.context.content.items || !Array.isArray(element.context.content.items)) {
-                return [new NoteItem("📭 Checklist is empty", vscode.TreeItemCollapsibleState.None)]; // Return empty array
+                return [new NoteItem(`📭 ${this.lang.translite('user_strings.checklist')} ${this.lang.translite('user_strings.is_empty')}`, vscode.TreeItemCollapsibleState.None)]; // Return empty array
             }
 
             const filePath = element.context.prov; // Get file path
@@ -249,12 +254,12 @@ class NoteManager{
         // Check if the element is a note
         if (element.context.id) {
             return [
-                new NoteItem(`- ID: ${element.context.id}`, vscode.TreeItemCollapsibleState.None),
-                new NoteItem(`- Type: ${element.context.type}`, vscode.TreeItemCollapsibleState.None),
-                new NoteItem(`- Content: ${element.context.content}`, vscode.TreeItemCollapsibleState.None),
-                new NoteItem(`- Created: ${new Date(element.context.createdAt).toLocaleString()}`, vscode.TreeItemCollapsibleState.None),
-                element.context?.deadline ? new NoteItem(`🔔 Deadline: ${formatDeadlineStatus(element.context?.deadline)}`, vscode.TreeItemCollapsibleState.None) : "",
-                ...(element.context.line ? [new NoteItem(`- Line: ${element.context.line}`, vscode.TreeItemCollapsibleState.None)] : [])
+                new NoteItem(`- ${this.lang.translite('user_strings.id')}: ${element.context.id}`, vscode.TreeItemCollapsibleState.None),
+                new NoteItem(`- ${this.lang.translite('user_strings.type')}: ${element.context.type}`, vscode.TreeItemCollapsibleState.None),
+                new NoteItem(`- ${this.lang.translite('user_strings.content')}: ${element.context.content}`, vscode.TreeItemCollapsibleState.None),
+                new NoteItem(`- ${this.lang.translite('user_strings.created_at')}: ${new Date(element.context.createdAt).toLocaleString()}`, vscode.TreeItemCollapsibleState.None),
+                element.context?.deadline ? new NoteItem(`🔔 Deadline: ${formatDeadlineStatus(element.context?.deadline, this.lang)}`, vscode.TreeItemCollapsibleState.None) : "",
+                ...(element.context.line ? [new NoteItem(`- ${this.lang.translite('user_strings.line')}: ${element.context.line}`, vscode.TreeItemCollapsibleState.None)] : [])
             ];
         }
             
@@ -309,8 +314,30 @@ class NoteItem extends vscode.TreeItem {
     }
 }
 
+function getIcon(type) {
+    switch (type) {
+        case "directory":
+            return "folder";
+        case "file":
+            return "file";
+        case "note":
+            return "notebook";
+        case "comment":
+            return "comment";
+        case "checklist":
+            return "tasklist";
+        case "event":
+            return "bell";
+        case "line":
+            return "pinned-dirty";
+        default:
+            return "notebook";
+    }
+}
 
-function formatDeadlineStatus(deadlineDate) {
+
+function formatDeadlineStatus(deadlineDate, lang) {
+
     if (!deadlineDate) return "";
 
     const deadline = new Date(deadlineDate);
@@ -322,13 +349,13 @@ function formatDeadlineStatus(deadlineDate) {
     let statusText = "";
 
     if (diffTime < 0) {
-        statusText = `🔴 Overdue (${Math.abs(diffDays)} days ago)`;
+        statusText = `🔴 ${lang.translite('user_strings.overdue')} (${Math.abs(diffDays)} ${lang.translite('user_strings.days_ago')})`;
     } else if (diffDays === 0) {
-        statusText = `🟡 Today!`;
+        statusText = `🟡 ${lang.translite('user_strings.today')}!`;
     } else if (diffDays === 1) {
-        statusText = `🟢 Tomorrow`;
+        statusText = `🟢 ${lang.translite('user_strings.tomorrow')}`;
     } else {
-        statusText = `🟢 Left ${diffDays} days.`;
+        statusText = `🟢 ${lang.translite('user_strings.left')} ${diffDays} ${lang.translite('user_strings.днів')}.`;
     }
 
     return `${statusText}: ${deadline.toLocaleString()}`;

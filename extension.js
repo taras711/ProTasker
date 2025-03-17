@@ -1,5 +1,6 @@
 const vscode = require('vscode');
 
+const {I18nManager} = require("./src/i18nManager");
 const { Main } = require("./src/main");
 const { NotesExplorer } = require('./src/dataManager');
 const { NotesExplorerProvider } = require('./src/notesExplorerProvider');
@@ -7,7 +8,7 @@ const { NotesExplorerProvider } = require('./src/notesExplorerProvider');
 let notifyInterval = null;
 const path = require("path")
 const notifiedDeadlines = new Set();
-
+const i18n = new I18nManager();
 function activate(context) {
     
     // initialize classes
@@ -54,6 +55,10 @@ function activate(context) {
             // refresh providers
             provider.refresh();
             updateNotifications(provider);
+
+            i18n.loadTranslations().then(() => {
+                vscode.window.showInformationMessage(i18n.translite("settings.languageChanged"));
+            });
         }
     });
     
@@ -153,32 +158,32 @@ function activate(context) {
 
         // 1️⃣ Choose entry type
         const entryType = await vscode.window.showQuickPick(['Note', 'Comment', 'Checklist', 'Event', ...settings.customTypes], {
-            placeHolder: 'Choose entry type'
+            placeHolder: i18n.translite('user_strings.choose_entry_type')
         });
     
         if (!entryType) return;
     
         // 2️⃣ Choose selection file or directory
         const selection = await vscode.window.showQuickPick(['File', 'Directory'], {
-            placeHolder: 'Choose selection'
+            placeHolder: i18n.translite('user_strings.choose_entry_selection')
         });
     
         if (!selection) return;
         
         // 3️⃣ Choose deadline if checklist or event
         if (entryType === 'Checklist' || entryType === 'Event') {
-            const wantsDeadline = await vscode.window.showQuickPick(['Yеs', 'No'], {
-                placeHolder: 'Add deadline?'
+            const wantsDeadline = await vscode.window.showQuickPick([i18n.translite('user_strings.yes'), i18n.translite('user_strings.no')], {
+                placeHolder: i18n.translite('user_strings.add_deadline')
             });
 
             // 3️⃣ Choose deadline
-            if (wantsDeadline === 'Yеs') {
-                deadline = await vscode.window.showInputBox({ placeHolder: 'Deadline (YYYY-MM-DD HH:MM)' });
+            if (wantsDeadline === i18n.translite('user_strings.yes')) {
+                deadline = await vscode.window.showInputBox({ placeHolder: i18n.translite('user_strings.deadline') });
                 if (deadline) {
                     const parsedDate = new Date(deadline);
                     // Check if the parsed date is valid
                     if (isNaN(parsedDate.getTime())) {
-                        vscode.window.showErrorMessage('❌ Invalid date format. Please use YYYY-MM-DD HH:MM');
+                        vscode.window.showErrorMessage(i18n.translite('user_strings.invalid_date_format'));
                         return;
                     }
                     deadline = parsedDate.toISOString(); // Convert to ISO string
@@ -189,7 +194,7 @@ function activate(context) {
         // 3️⃣ Get file path
         let filePath = await getTargetPath(selection);
         if (!filePath){  
-            vscode.window.showErrorMessage("No active editor."); //if there is no active editor show error message 
+            vscode.window.showErrorMessage(i18n.translite('user_strings.no_active_editor')); //if there is no active editor show error message 
             return
         };
     
@@ -198,17 +203,17 @@ function activate(context) {
             let checklistItems = []; // checklist items
             let addMore = true; // flag for adding more items
 
-            const name = await vscode.window.showInputBox({placeHolder: 'Checklist name'}); // get checklist name
+            const name = await vscode.window.showInputBox({placeHolder: `${i18n.translite('user_strings.checklist')} ${i18n.translite('user_strings.name')}`}); // get checklist name
 
             if (!name) return;
     
             // 4️⃣ Add checklist items
             while (addMore) {
-                const item = await vscode.window.showInputBox({ placeHolder: 'Enter checklist item (leave empty to finish)' });
+                const item = await vscode.window.showInputBox({ placeHolder: i18n.translite('user_strings.enter_checklist_item') });
                 if (!item) break;
                 checklistItems.push({ text: item, done: false });
     
-                addMore = await vscode.window.showQuickPick(['Add more item', 'Done'], { placeHolder: 'Add more?' }) === 'Add more';
+                addMore = await vscode.window.showQuickPick([i18n.translite('user_strings.add_more_item'), i18n.translite('user_strings.done')], { placeHolder: i18n.translite('user_strings.add_more') }) === i18n.translite('user_strings.add_more');
             }
     
             if (checklistItems.length === 0) return;
@@ -227,7 +232,7 @@ function activate(context) {
             await provider.addEntry(filePath, selection === 'Directory', 'checklist', checklistEntry);
         } else {
             // 4️⃣ Get note content
-            const noteContent = await vscode.window.showInputBox({ placeHolder: 'Enter note content' });
+            const noteContent = await vscode.window.showInputBox({ placeHolder: i18n.translite('user_strings.enter_note_content') });
             if (!noteContent) return;
     
             if (selection === 'File') {
@@ -249,7 +254,7 @@ function activate(context) {
     main.set('addChecklistItem', async (treeItem) => {
         if (!treeItem || treeItem.context.type !== "checklist") return; // check if treeItem is checklist
 
-        const newItemText = await vscode.window.showInputBox({ placeHolder: 'Enter item text' });
+        const newItemText = await vscode.window.showInputBox({ placeHolder: i18n.translite('user_strings.enter_item_text') });
         if (!newItemText) return;
         
         // Add new item to the checklist
@@ -262,10 +267,10 @@ function activate(context) {
             // Refresh UI
             provider.refresh();
             notesExplorerProvider.refresh();
-            vscode.window.showInformationMessage(`✅ Item "${newItemText}" added to the checklist!`);
+            vscode.window.showInformationMessage(i18n.translite('user_strings.checklist_item_added').replace('%%newItemText%%', newItemText));
             
         } catch (error) {
-            vscode.window.showErrorMessage(`❌ Error saving changes: ${error.message}`);
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.error_saving_changes')} ${error.message}`);
         }
     });
 
@@ -324,31 +329,31 @@ function activate(context) {
             notesExplorerProvider.refresh();
 
             // Show success message with the new done status
-            vscode.window.showInformationMessage(`🔄 Item "${treeItem.data.text}" now ${treeItem.data.done ? "not fulfilled ❌" : "fulfilled ✅"}`);
+            vscode.window.showInformationMessage(`🔄 ${i18n.translite('user_strings.item')} "${treeItem.data.text}" ${i18n.translite('user_strings.now')} ${treeItem.data.done ? i18n.translite('user_strings.not_fulfilled') : i18n.translite('user_strings.fulfilled')}`);
     });
 
     // set commands callback for remove checklist items
     main.set('removeChecklistItem', async (item) => {
         
         if (!item || !item.context.checklistId || item.context.index === undefined) {
-            vscode.window.showErrorMessage("❌ Item Unable to Delete: No Data.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.item_unable_to_delete')}: ${i18n.translite('user_strings.no_data')}`);
             return;
         }
 
-        const confirm = await vscode.window.showWarningMessage(`You are about to delete the item: ${item.context.text}?`, "Yes", "No");
-        if (confirm !== "Yes") return;
+        const confirm = await vscode.window.showWarningMessage(`${i18n.translite('user_strings.delete_the_item')}: ${item.context.text}?`, i18n.translite('user_strings.yes'), i18n.translite('user_strings.no'));
+        if (confirm !== i18n.translite('user_strings.yes')) return;
 
         // Get the filePath via findChecklistFilePath
         const filePath = findChecklistFilePath(item.context.checklistId, item.context.path);
         if (!filePath) {
-            vscode.window.showErrorMessage("❌ File not found.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.file')} ${i18n.translite('user_strings.not_found')}`);
             return;
         }
 
         // Uploading the checklist data
         const checklist = provider.notesData[item.context.path][filePath].checklists.find(cl => cl.id === item.context.checklistId);
         if (!checklist) {
-            vscode.window.showErrorMessage("❌ Checklist not found.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.checklist')} ${i18n.translite('user_strings.not_found')}`);
             return;
         }
         // Delete the item from the checklist
@@ -361,7 +366,7 @@ function activate(context) {
         provider.refresh();
         notesExplorerProvider.refresh();
 
-        vscode.window.showInformationMessage("✅ Item Deleted Successfully."); // Show success message
+        vscode.window.showInformationMessage(`${i18n.translite('user_strings.deleted')} ${i18n.translite('user_strings.successfully')}.`); // Show success message
     });
 
     // set commands callback for delete note
@@ -373,8 +378,8 @@ function activate(context) {
             return;
         }
 
-        const confirm = await vscode.window.showWarningMessage("Do you want to delete this note?", "Yes", "No");
-        if (confirm !== "Yes") return;
+        const confirm = await vscode.window.showWarningMessage(i18n.translite('user_strings.delete_the_note'), i18n.translite('user_strings.yes'), i18n.translite('user_strings.no'));
+        if (confirm !== i18n.translite('user_strings.yes')) return;
 
         const isDirectory = provider.notesData.directories[filePath] !== undefined; // Check if it's a directory or a file
         const target = isDirectory ? provider.notesData.directories[filePath] : provider.notesData.files[filePath]; // Get the target object
@@ -403,7 +408,7 @@ function activate(context) {
         const editor = vscode.window.activeTextEditor;
 
         if (!editor) {
-            vscode.window.showErrorMessage("❌ No active editor.");
+            vscode.window.showErrorMessage(i18n.translite('user_strings.no_active_editor'));
             return;
         }
 
@@ -412,7 +417,7 @@ function activate(context) {
 
         // Check if the file exists
         if (!provider.notesData.lines[filePath]) {
-            vscode.window.showErrorMessage("❌ File not found.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.file')} ${i18n.translite('user_strings.not_found')}`);
             return;
         }
 
@@ -426,14 +431,14 @@ function activate(context) {
 
         // Check if there are any notes
         if (lineNotes.length === 0) {
-            vscode.window.showInformationMessage("📭 There are no comments for this line.");
+            vscode.window.showInformationMessage(`📭 ${ i18n.translite('user_strings.no_comments_for_this_line')}.`);
             return;
         }
 
         // Combining all comments into one text
-        const fullText = lineNotes.map((note) => `Type: ${note.type}* \r\n Content: ${note.content}. \r\n Created: ${note.createdAt}`).join("\n\n");
+        const fullText = lineNotes.map((note) => `${i18n.translite('user_strings.type')}: ${note.type}* \r\n ${i18n.translite('user_strings.content')}: ${note.content}. \r\n ${i18n.translite('user_strings.created_at')}: ${note.createdAt}`).join("\n\n");
 
-        vscode.window.showInformationMessage(`📝 Comments for line ${line}:\n\n${fullText}`, { modal: true });
+        vscode.window.showInformationMessage(`📝 ${i18n.translite('user_strings.comments_for_line')} ${line}:\n\n${fullText}`, { modal: true });
     });
 
     // set commands callback for addNoteToLine
@@ -443,7 +448,7 @@ function activate(context) {
     
         // Get the note content from the user
         const noteContent = await vscode.window.showInputBox({
-            placeHolder: 'Enter note content'
+            placeHolder: i18n.translite('user_strings.enter_note_content'),
         });
     
         if (noteContent) {
@@ -467,7 +472,7 @@ function activate(context) {
     
         // Check if there are notes on the current line
         if (!lineHasNote()) {
-            vscode.window.showInformationMessage("There are no notes on this line.");
+            vscode.window.showInformationMessage(i18n.translite('user_strings.no_notes_on_this_line'));
             return;
         }
     
@@ -476,14 +481,14 @@ function activate(context) {
     
         // Check if there are notes on the current line
         if (notesOnLine.length === 0) {
-            vscode.window.showInformationMessage("There are no notes on this line.");
+            vscode.window.showInformationMessage(i18n.translite('user_strings.no_notes_on_this_line'));
             return;
         }
     
         const noteToEdit = notesOnLine[0]; // Get the first note on the current line
         const editedContent = await vscode.window.showInputBox({
             value: noteToEdit.content,
-            placeHolder: "Edit note content"
+            placeHolder: i18n.translite('user_strings.edit_note_content'),
         });
     
         // Check if the note content was edited
@@ -494,7 +499,7 @@ function activate(context) {
             // Refresh UI
             provider.refresh();
             notesExplorerProvider.refresh()
-            vscode.window.showInformationMessage("Note content has been edited successfully.");
+            vscode.window.showInformationMessage(`${i18n.translite('user_strings.note_content_has_been_edited')} ${i18n.translite('user_strings.successfully')}.`);
         }
         highlightCommentedLines(editor, provider); // Update highlight commented lines
     });
@@ -506,13 +511,13 @@ function activate(context) {
 
         // Check if the note data exists
         if (!treeItem || !treeItem.data || !treeItem.data.id) {
-            vscode.window.showErrorMessage("Error: Note data not found.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.error')}: ${i18n.translite('user_strings.note_data')} ${i18n.translite('user_strings.not_found')}.`);
             return;
         }
     
         // Confirm deletion
-        const confirm = await vscode.window.showWarningMessage(`You are about to delete ${treeItem.data.content} ?`, "Yes", "No");
-        if (confirm !== "Yes") return;
+        const confirm = await vscode.window.showWarningMessage(`${i18n.translite('user_strings.delete_the_item')} ${treeItem.data.content}?`, i18n.translite('user_strings.yes'), i18n.translite('user_strings.no'));
+        if (confirm !== i18n.translite('user_strings.yes')) return;
     
         const customTypes = settings.customTypes.map(item => (item + "s").toLowerCase()); // Get custom note types
     
@@ -527,7 +532,7 @@ function activate(context) {
             targetKey = path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath;
         }
         if (!targetCollection || !targetKey || !targetCollection[targetKey]) {
-            vscode.window.showErrorMessage("Error: Target collection or key not found.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.error')}: ${i18n.translite('user_strings.target_collection_or_key')} ${i18n.translite('user_strings.not_found')}.`);
             return;
         }
     
@@ -563,7 +568,7 @@ function activate(context) {
         notesExplorerProvider.refresh();
         highlightCommentedLines(vscode.window.activeTextEditor, provider); //Update highlight commented lines
 
-        vscode.window.showInformationMessage("✅ Note has been deleted.");
+        vscode.window.showInformationMessage(`${i18n.translite('user_strings.note_has_been_deleted')} ${i18n.translite('user_strings.successfully')}.`);
     });
 
     // set commands callback for editNote
@@ -573,7 +578,7 @@ function activate(context) {
 
         // Check if the note data exists
         if (!treeItem || !treeItem.data || !treeItem.data.id) {
-            vscode.window.showErrorMessage("Error: Note data not found.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.error')}: ${i18n.translite('user_strings.note_data')} ${i18n.translite('user_strings.not_found')}.`);
             return;
         }
         const { id, prov, path } = treeItem.data; // Get note data from the tree item
@@ -589,7 +594,7 @@ function activate(context) {
             targetKey = path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath;
         }
         if (!targetCollection || !targetKey || !targetCollection[targetKey]) {
-            vscode.window.showErrorMessage("Error: Target collection or key not found.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.error')}: ${i18n.translite('user_strings.target_collection_or_key')} ${i18n.translite('user_strings.not_found')}.`);
             return;
         }
 
@@ -610,19 +615,19 @@ function activate(context) {
     
         // Check if the note was found
         if (!targetEntry) {
-            vscode.window.showErrorMessage("Error: Note not found.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.error')}: ${i18n.translite('user_strings.note')} ${i18n.translite('user_strings.not_found')}.`);
             return;
         }
     
         // Show input box for new text
         const newText = await vscode.window.showInputBox({
-            placeHolder: 'Enter new text for the note',
+            placeHolder: i18n.translite('user_strings.enter_new_text_for_the_note'),
             value: targetEntry.content
         });
     
         // Check if the new text is valid
         if (!newText || newText.trim() === "") {
-            vscode.window.showErrorMessage("⚠️ New text cannot be empty.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.new_text')} ${i18n.translite('user_strings.cannot_be_empty')}.`);
             return;
         }
     
@@ -630,7 +635,7 @@ function activate(context) {
         targetEntry.content = newText;
     
         // Show success message
-        vscode.window.showInformationMessage("✅ Note has been updated.");
+        vscode.window.showInformationMessage(i18n.translite('user_strings.note_has_been_updated'));
     
         // Save changes
         provider.saveNotesToFile();
@@ -644,12 +649,12 @@ function activate(context) {
     // set commands callback for search
     main.set('searchNotes', async () => {
         const query = await vscode.window.showInputBox({
-            placeHolder: "🔍 Enter search query",
-            prompt: "Enter search query"
+            placeHolder: `🔍 ${i18n.translite('user_strings.enter_search_query')}`,
+            prompt: i18n.translite('user_strings.enter_search_query')
         });
     
         if (!query || query.trim() === "") {
-            vscode.window.showErrorMessage("⚠️ Search query cannot be empty!");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.search_query')} ${i18n.translite('user_strings.cannot_be_empty')}.`);
             return;
         }
         // search notes
@@ -676,21 +681,21 @@ function activate(context) {
 
         // Add custom note types to the array
         settings.customTypes.map(note => {
-            customTypes.push({label: note, description: `Filter by ${note} only`})
+            customTypes.push({label: note, description: `${i18n.translite('user_strings.filter')} ${i18n.translite('user_strings.by')} ${note} ${i18n.translite('user_strings.only')}`});
         })
         
         // Choosing a Filter Type
         const filterType = await vscode.window.showQuickPick(
             [
-                { label: 'All', description: 'Show all notes, comments, checklists, events, ...' },
-                { label: 'Notes', description: 'Filter by notes only' },
-                { label: 'Comments', description: 'Filter by comments only' },
-                { label: 'Checklists', description: 'Filter by checklists only' },
-                { label: 'Events', description: 'Filter by events only' },
-                { label: 'Line', description: 'Filter by events only' },
+                { label: 'All', description: `${i18n.translite('user_strings.show_all_types')} - notes, comments, checklists, events, ...` },
+                { label: 'Notes', description: `${i18n.translite('user_strings.filter')} ${i18n.translite('user_strings.by')} ${i18n.translite('user_strings.notes')} ${i18n.translite('user_strings.only')}` },
+                { label: 'Comments', description: `${i18n.translite('user_strings.filter')} ${i18n.translite('user_strings.by')} ${i18n.translite('user_strings.comments')} ${i18n.translite('user_strings.only')}` },
+                { label: 'Checklists', description: `${i18n.translite('user_strings.filter')} ${i18n.translite('user_strings.by')} ${i18n.translite('user_strings.checklists')} ${i18n.translite('user_strings.only')}` },
+                { label: 'Events', description: `${i18n.translite('user_strings.filter')} ${i18n.translite('user_strings.by')} ${i18n.translite('user_strings.events')} ${i18n.translite('user_strings.only')}` },
+                { label: 'Line', description: `${i18n.translite('user_strings.filter')} ${i18n.translite('user_strings.by')} ${i18n.translite('user_strings.lines')} ${i18n.translite('user_strings.only')}` },
                 ...customTypes
             ],
-            { placeHolder: 'Select a type to filter' }
+            { placeHolder: i18n.translite('user_strings.select_a_type_to_filter') }
         );
     
         if (!filterType) return;  // if user cancels, do nothing
@@ -698,12 +703,12 @@ function activate(context) {
         // Choosing a Filter Category
         const filterCategory = await vscode.window.showQuickPick(
             [
-                { label: 'All', description: 'Show from all categories (files, directories, lines)' },
-                { label: 'Files', description: 'Filter by files' },
-                { label: 'Directories', description: 'Filter by directories' },
-                { label: 'Lines', description: 'Filter by lines' }
+                { label: 'All', description: `${i18n.translite('user_strings.show_from_all_categories')} (${i18n.translite('user_strings.files')}, ${i18n.translite('user_strings.directories')}, ${i18n.translite('user_strings.lines')})` },
+                { label: 'Files', description: `${i18n.translite('user_strings.filter')} ${i18n.translite('user_strings.by')} ${i18n.translite('user_strings.files')}` },
+                { label: 'Directories', description: `${i18n.translite('user_strings.filter')} ${i18n.translite('user_strings.by')} ${i18n.translite('user_strings.directories')}` },
+                { label: 'Lines', description: `${i18n.translite('user_strings.filter')} ${i18n.translite('user_strings.by')} ${i18n.translite('user_strings.lines')}` },
             ],
-            { placeHolder: 'Select a category to filter by' }
+            { placeHolder: `${i18n.translite('user_strings.select_a_category_to')} ${i18n.translite('user_strings.filter')} ${i18n.translite('user_strings.by')}` }
         );
     
         if (!filterCategory) return;  // if user cancels, do nothing
@@ -718,7 +723,7 @@ function activate(context) {
     
         // Show a message if no results were found
         if (filteredResults.length === 0) {
-            vscode.window.showInformationMessage("No results found.");
+            vscode.window.showInformationMessage(i18n.translite('user_strings.no_results_found'));
         }
     
         // Clear search results
@@ -732,7 +737,7 @@ function activate(context) {
     main.set('goToNote', async (note) => {
         // Check if the note is valid
         if (!note || !note.context.path || typeof note.context.line !== "number") {
-            vscode.window.showErrorMessage("Error: Invalid note.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.error')}: ${i18n.translite('user_strings.invalid_note')}.`);
             return;
         }
     
@@ -753,7 +758,7 @@ function activate(context) {
             editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
         } catch (error) {
             // If file does not exist, show an error message
-            vscode.window.showErrorMessage(`File not found: ${fileUri.fsPath} error: ${error}`);
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.file')} ${i18n.translite('user_strings.not_found')}: ${fileUri.fsPath} ${i18n.translite('user_strings.error')}: ${error}`);
         }
     });
 
@@ -761,7 +766,7 @@ function activate(context) {
     main.set('goToFile', async (note) => {
         // Check if the note is valid
         if (!note || !note.filepath ) {
-            vscode.window.showErrorMessage("Error: Note is not valid.");
+            vscode.window.showErrorMessage(`${i18n.translite('user_strings.error')}: ${i18n.translite('user_strings.invalid_note')}.`);
             return;
         }
     
@@ -799,8 +804,8 @@ function activate(context) {
 
         // confirm delete
         if(type && path){
-            const confirm = await vscode.window.showWarningMessage(`Are you sure you want to clear ${note.label}?`, "Yes", "No");
-            if (confirm !== "Yes") return;
+            const confirm = await vscode.window.showWarningMessage(`${i18n.translite('user_strings.are_you_sure_you_want_to_clear')} ${note.label}?`, i18n.translite('user_strings.yes'), i18n.translite('user_strings.no'));
+            if (confirm !== i18n.translite('user_strings.yes')) return;
 
             const isDirectory = provider.notesData[type][path] !== undefined; // Check if it's a directory
             const target = provider.notesData[type][path];
@@ -811,8 +816,8 @@ function activate(context) {
             }
 
             // Clear the directory
-            if(delete provider.notesData[type][path]) vscode.window.showInformationMessage(`Clear ${note.label} success.`);
-            else { vscode.window.showErrorMessage(`Clear ${note.label} failed. Try again letter.`); return;};
+            if(delete provider.notesData[type][path]) vscode.window.showInformationMessage(`${i18n.translite('user_strings.clear')} ${note.label} ${i18n.translite('user_strings.successfully')}.`);
+            else { vscode.window.showErrorMessage(`${i18n.translite('user_strings.clear')} ${note.label} ${i18n.translite('user_strings.failed')}. ${i18n.translite('user_strings.try_again_letter')}.`); return;};
 
             // save notes
             await provider.saveNotesToFile();
@@ -904,7 +909,7 @@ function activate(context) {
                 // Create the decoration
                 const decoration = {
                     range: new vscode.Range(lineNumber - 1, 0, lineNumber - 1, 100),
-                    hoverMessage: new vscode.MarkdownString(`**Note:** ${note.content}  \n **Type:** ${note.type}  \n **Created:** ${provider.timeago.format(new Date(note.createdAt))}`),
+                    hoverMessage: new vscode.MarkdownString(`**${i18n.translite('user_strings.note')}:** ${note.content}  \n **${i18n.translite('user_strings.type')}:** ${note.type}  \n **${i18n.translite('user_strings.created_at')}:** ${provider.timeago.format(new Date(note.createdAt))}`),
                     renderOptions: {}
                 };
                 // Apply styles based on user settings
@@ -1042,7 +1047,7 @@ function checkDeadlines(provider) {
                 }
                 // Display a notification if the deadline has passed
                 if (diff <= 0 && !notifiedDeadlines.has(uniqueKey)) {
-                    vscode.window.showErrorMessage(`❌ Overdue: ${note.content}`);
+                    vscode.window.showErrorMessage(`❌ ${i18n.translite("user_string.overdue")}: ${note.content}`);
                     notifiedDeadlines.add(uniqueKey); // Add the deadline to the set
                 }
             }
@@ -1096,7 +1101,7 @@ async function getTargetPath(selection) {
             canSelectFiles: false,
             canSelectFolders: true,
             canSelectMany: false,
-            openLabel: 'Select Directory for notes'
+            openLabel: i18n.translite("user_string.select_directory_for_notes")
         });
 
         return uri && uri.length > 0 ? uri[0].fsPath : null; // Return the path of the selected directory
