@@ -91,7 +91,7 @@ The settings file can be found in **settings.json**:
 
 ### Available Options:
 
-- `"language"` – Select language (**"en"**, **"ru"**, **"ua"**).
+- `"language"` – Select language (**"en"**, **"es"**, **"uk"**, **"fr"**, ...).
 - `"showPinned"` – Show pinned notes (**true/false**).
 - `"noteIcon"` – Choose an icon for notes.
 
