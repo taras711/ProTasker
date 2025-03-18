@@ -123,7 +123,7 @@ Want to contribute? Follow these steps:
 
 ## 📜 License
 
-This project is licensed under the **MIT License**. See the full license in the **LICENSE** file.
+This project is licensed under the [LICENSE](./LICENSE). See the full license in the **LICENSE** file.
 
 ## 👥 Authors & Acknowledgments
 
