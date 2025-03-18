@@ -97,5 +97,7 @@
         "days": "days",
         "left": "left"
         
-    }
+    },
+    "protasker.language.description": "Choose Interface Language"
+    
 }

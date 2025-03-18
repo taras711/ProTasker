@@ -24,9 +24,30 @@
           "type": "string",
           "enum": [
             "en",
-            "cz",
-            "ua"
+            "cs",
+            "uk",
+            "de",
+            "fr",
+            "es",
+            "pl",
+            "it",
+            "pt",
+            "ru",
+            "zh"
           ],
+          "enumDescriptions": [
+                "English",
+                "Czech",
+                "Ukrainian",
+                "German",
+                "French",
+                "Spanish",
+                "Polish",
+                "Italian",
+                "Portuguese",
+                "Russian",
+                "Chinese"
+            ],
           "default": "en",
           "description": "Choose Interface Language"
         },

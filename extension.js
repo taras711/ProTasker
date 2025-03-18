@@ -1,16 +1,18 @@
 const vscode = require('vscode');
-
+const nls = require('vscode-nls');
+const localize = nls.loadMessageBundle();
 const {I18nManager} = require("./src/i18nManager");
 const { Main } = require("./src/main");
 const { NotesExplorer } = require('./src/dataManager');
 const { NotesExplorerProvider } = require('./src/notesExplorerProvider');
+const { setTimeagoLocale, formatTimeAgo } = require('./src/getTimeAgo');
 
 let notifyInterval = null;
 const path = require("path")
 const notifiedDeadlines = new Set();
 const i18n = new I18nManager();
 function activate(context) {
-    
+    localize('protasker.language.description', 'User defined types');
     // initialize classes
     const main = new Main(context);
     const provider = new NotesExplorer(context);
@@ -55,6 +57,8 @@ function activate(context) {
             // refresh providers
             provider.refresh();
             updateNotifications(provider);
+
+            setTimeagoLocale();
 
             i18n.loadTranslations().then(() => {
                 vscode.window.showInformationMessage(i18n.translite("settings.languageChanged"));
@@ -909,7 +913,7 @@ function activate(context) {
                 // Create the decoration
                 const decoration = {
                     range: new vscode.Range(lineNumber - 1, 0, lineNumber - 1, 100),
-                    hoverMessage: new vscode.MarkdownString(`**${i18n.translite('user_strings.note')}:** ${note.content}  \n **${i18n.translite('user_strings.type')}:** ${note.type}  \n **${i18n.translite('user_strings.created_at')}:** ${provider.timeago.format(new Date(note.createdAt))}`),
+                    hoverMessage: new vscode.MarkdownString(`**${i18n.translite('user_strings.note')}:** ${note.content}  \n **${i18n.translite('user_strings.type')}:** ${note.type}  \n **${i18n.translite('user_strings.created_at')}:** ${formatTimeAgo(new Date(note.createdAt))}`),
                     renderOptions: {}
                 };
                 // Apply styles based on user settings

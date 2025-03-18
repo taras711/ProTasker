@@ -96,5 +96,6 @@
         "tomorrow": "завтра",
         "days": "днів",
         "left": "залишилося"
-    }
+    },
+    "protasker.language.description": "Оберіть мову інтерфейсу"
 }   

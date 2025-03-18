@@ -1,8 +1,9 @@
 const vscode = require('vscode');
 const path = require('path');
-const timeago = require('timeago.js');
 const { I18nManager } = require("./i18nManager");
+const { setTimeagoLocale, formatTimeAgo } = require('./getTimeAgo');
 
+setTimeagoLocale();
 /**
  * This class is responsible for managing notes, comments, checklists, and events for a given view.
  * It provides methods for retrieving and filtering data, as well as creating new notes.
@@ -132,7 +133,7 @@ class NoteManager{
         
             // Add reset search item if needed
             if (this.filteredNotes || this.searchResults) {
-                const label = this.filteredNotes ? this.lang.translite("user_strings.reset_filter") : this.lang.translite("user_strings.reset_search");
+                const label = this.filteredNotes ? this.lang.translite("user_strings.reset_the_filter") : this.lang.translite("user_strings.reset_search");
                 const resetSearchItem = new NoteItem(
                     label,
                     vscode.TreeItemCollapsibleState.None,
@@ -283,7 +284,7 @@ class NoteItem extends vscode.TreeItem {
         this.filepath = this.context.filepath || null
         this.linepath = this.context.linepath || null
         if(context.createdAt){
-            if(settings.showTimeAgo) converToTimeago = `| ${timeago.format(new Date(context.createdAt))}` || ""
+            if(settings.showTimeAgo) converToTimeago = `| ${formatTimeAgo(new Date(context.createdAt))}` || ""
         }
 
         this.tooltip = `${((typeof context.content == "object" ? context.name : context.content) || label)} ${converToTimeago}`;
