@@ -34,6 +34,7 @@ class NoteManager{
      * @returns {Promise<Array>} - A Promise that resolves to an array of NoteItem objects, which represent the structured data.
      */
     async mainData(element){
+        this.lang.loadTranslations();
         const editor = vscode.window.activeTextEditor; // active editor
         const file = editor ? path.normalize(editor.document.uri.fsPath).replace(/\\/g, "/").toLowerCase() : null; // Get the file path
         const pathDir = file ? file.slice(0, file.lastIndexOf('/')) : null; // Get the directory path
@@ -69,7 +70,7 @@ class NoteManager{
                     return new NoteItem(
                         `${hasDeadline ? `(🔔)` : ""} ${path.basename(dirPath)}`,
                          vscode.TreeItemCollapsibleState.Collapsed,
-                        { count: totalRecords, directory: dirPath, prov: "file", contextValue: "directory", icon: "folder"}
+                        { count: totalRecords, directory: dirPath, prov: "file", contextValue: "directory", icon: "folder", lang: this.notesData.lang}
                     );
                 });
                    
@@ -99,7 +100,7 @@ class NoteManager{
                     return new NoteItem(
                         `${hasDeadline? `(🔔)` : ""} ${path.basename(filePath)}`,
                         vscode.TreeItemCollapsibleState.Collapsed,
-                        { count: totalRecords, file: filePath, prov: "directories", contextValue: "file", icon: "file"}
+                        { count: totalRecords, file: filePath, prov: "directories", contextValue: "file", icon: "file", lang: this.notesData.lang}
                     );
                 });
                 
@@ -119,13 +120,14 @@ class NoteManager{
                     return new NoteItem(
                         `${hasDeadline ? "(🔔)" : ""} ${path.basename(filePath)}`,
                         vscode.TreeItemCollapsibleState.Collapsed,
-                        { count: this.notesData.lines[filePath].length, contextValue: "lines", lineFile: filePath, icon: "pinned"}
+                        { count: this.notesData.lines[filePath].length, contextValue: "lines", lineFile: filePath, icon: "pinned", lang: this.notesData.lang}
                     );
                 });
 
             // Get all items
             const allItems = [...items, ...directories, ...files, ...lines];
 
+            console.log(allItems);
             // Check if allItems is empty
             if (allItems.length == 0) {
                 allItems.push(new NoteItem(`📭 ${this.lang.translite('user_strings.no_notes')}`, vscode.TreeItemCollapsibleState.None));
@@ -286,10 +288,8 @@ class NoteItem extends vscode.TreeItem {
         if(context.createdAt){
             if(settings.showTimeAgo) converToTimeago = `| ${formatTimeAgo(new Date(context.createdAt))}` || ""
         }
-
-        this.tooltip = `${((typeof context.content == "object" ? context.name : context.content) || label)} ${converToTimeago}`;
+        this.tooltip = ` ${((typeof context.content == "object" ? context.name : context.content) || label)} ${converToTimeago}`;
         description = context?.count ? `(${context.count})` : (`${context.type ? `(${context.type})` : ""} ${converToTimeago}`)
-        
         this.description = description;
 
       

@@ -13,6 +13,7 @@
     "user_strings": {
         "yes": "Yes",
         "no": "No",
+        "or": "or",
         "name": "Name",
         "settings": "Settings",
         "choose_entry_type": "Choose entry type",
@@ -79,7 +80,7 @@
         "overdue": "Overdue",
         "try_again_letter": "Try again",
         "show_all_types": "Show all types of notes",
-        "Select_a_type_to_filter": "Select a type to filter",
+        "select_a_type_to_filter": "Select a type to filter",
         "show_from_all_categories": "Show from all categories",
         "select_a_category_to": "Select a category to",
         "no_results_found": "No results found",
@@ -95,7 +96,11 @@
         "today": "today",
         "tomorrow": "tomorrow",
         "days": "days",
-        "left": "left"
+        "left": "left",
+        "view": "View",
+        "category": "Category",
+        "categories": "Categories"
+        
         
     },
     "protasker.language.description": "Choose Interface Language"

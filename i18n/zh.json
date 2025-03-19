@@ -13,6 +13,7 @@
     "user_strings": {
         "yes": "是",
         "no": "否",
+        "or": "或",
         "name": "名称",
         "settings": "设置",
         "choose_entry_type": "选择条目类型",
@@ -95,7 +96,10 @@
         "today": "今天",
         "tomorrow": "明天",
         "days": "天",
-        "left": "剩余"
+        "left": "剩余",
+        "view": "查看",
+        "category": "类别",
+        "categories": "类别"
     },
     "protasker.language.description": "选择界面语言"
 }

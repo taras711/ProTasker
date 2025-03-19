@@ -13,6 +13,7 @@
     "user_strings": {
         "yes": "Ja",
         "no": "Nein",
+        "or": "oder",
         "name": "Name",
         "settings": "Einstellungen",
         "choose_entry_type": "Wählen Sie den Typ des Eintrags",
@@ -95,7 +96,10 @@
         "today": "heute",
         "tomorrow": "morgen",
         "days": "Tage",
-        "left": "übrig"
+        "left": "übrig",
+        "view": "Ansicht",
+        "category": "Kategorie",
+        "categories": "Kategorien"
     },
     "protasker.language.description": "Wählen Sie die Sprache des Interface"
 }

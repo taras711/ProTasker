@@ -3,7 +3,6 @@ const path = require('path');
 const vscode = require('vscode');
 const timeago = require('timeago.js');
 const { NoteManager } = require("./manager");
-const { I18nManager } = require("./i18nManager");
 /**
  * NotesExplorer Class
  * 
@@ -45,10 +44,9 @@ class NotesExplorer extends NoteManager{
         this.viewId = null; // View identifier
         this.dataNotes = path.join(__dirname, 'notesData.json'); // Data file
         this.notesData = this.loadNotes(); // Loaded notes
+        this.notesData['lang'] = vscode.workspace.getConfiguration('protasker').get('language');
         this.searchResults = null; // Search results
         this.search = false; // Search active
-
-        this.lang = new I18nManager();
     }
 
     /**

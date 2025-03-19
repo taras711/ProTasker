@@ -13,6 +13,7 @@
     "user_strings": {
         "yes": "Так",
         "no": "Нi",
+        "or": "або",
         "name": "Назва",
         "settings": "Налаштування",
         "choose_entry_type": "  тип запису",
@@ -95,7 +96,10 @@
         "today": "сьогодні",
         "tomorrow": "завтра",
         "days": "днів",
-        "left": "залишилося"
+        "left": "залишилося",
+        "view": "Перегляд",
+        "category": "Категорія",
+        "categories": "Категорії"
     },
     "protasker.language.description": "Оберіть мову інтерфейсу"
 }   

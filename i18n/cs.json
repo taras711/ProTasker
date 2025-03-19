@@ -13,6 +13,7 @@
     "user_strings": {
         "yes": "Ano",
         "no": "Ne",
+        "or": "nebo",
         "name": "Název",
         "settings": "Nastavení",
         "choose_entry_type": "Vyberte typ záznamu",
@@ -76,7 +77,7 @@
         "only": "pouze",
         "clear": "Vyčistit",
         "failed": "Neúspěšné",
-        "overdue": "Přesčasné",
+        "overdue": "Překročeno",
         "try_again_letter": "Zkuste to znovu",
         "show_all_types": "Zobrazit všechny typy poznámek",
         "select_a_type_to_filter": "Vyberte typ pro filtraci",
@@ -95,7 +96,10 @@
         "today": "dnes",
         "tomorrow": "zítra",
         "days": "dnů",
-        "left": "zbývá"
+        "left": "zbývá",
+        "view": "Zobrazit",
+        "category": "Kategorie",
+        "categories": "Kategorie"
     },
     "protasker.language.description": "Vyberte jazyk rozhraní"
 }

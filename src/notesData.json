@@ -108,6 +108,20 @@
           "prov": "files"
         }
       ]
+    },
+    "c:/users/taras/onedrive/plocha/projects/app/main project/index.html": {
+      "notes": [
+        {
+          "id": 1742405907369,
+          "type": "note",
+          "content": "drgdrgr",
+          "createdAt": "2025-03-19T17:38:27.369Z",
+          "deadline": false
+        }
+      ],
+      "comments": [],
+      "checklists": [],
+      "events": []
     }
   },
   "directories": {
@@ -155,22 +169,6 @@
       "comments": [],
       "checklists": [],
       "events": []
-    },
-    "c:/users/taras/onedrive/plocha/projects/app/caled.v1.7/misc": {
-      "notes": [],
-      "comments": [],
-      "checklists": [],
-      "events": [],
-      "versions": [
-        {
-          "id": 1742062212378,
-          "type": "version",
-          "content": "sdfdsff sdfsd ",
-          "createdAt": "2025-03-15T18:10:12.378Z",
-          "deadline": null,
-          "prov": "directories"
-        }
-      ]
     }
   },
   "lines": {
@@ -218,5 +216,6 @@
         "createdAt": "2025-03-16T20:07:36.622Z"
       }
     ]
-  }
+  },
+  "lang": "cs"
 }

@@ -36,18 +36,18 @@
             "zh"
           ],
           "enumDescriptions": [
-                "English",
-                "Czech",
-                "Ukrainian",
-                "German",
-                "French",
-                "Spanish",
-                "Polish",
-                "Italian",
-                "Portuguese",
-                "Russian",
-                "Chinese"
-            ],
+            "English",
+            "Czech",
+            "Ukrainian",
+            "German",
+            "French",
+            "Spanish",
+            "Polish",
+            "Italian",
+            "Portuguese",
+            "Russian",
+            "Chinese"
+          ],
           "default": "en",
           "description": "Choose Interface Language"
         },
@@ -324,7 +324,7 @@
   "scripts": {
     "lint": "eslint .",
     "pretest": "npm run lint",
-    "test": "vscode-test"
+    "test": "mocha"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -332,7 +332,8 @@
     "@types/vscode": "^1.97.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
-    "eslint": "^9.19.0"
+    "eslint": "^9.19.0",
+    "mocha": "^11.1.0"
   },
   "dependencies": {
     "node-notifier": "^10.0.1",
