@@ -93,7 +93,7 @@ class NotesExplorerProvider extends NoteManager{
 
         // Check if there is an active editor
         if(!editor){
-            return [new this.noteItem("... No active editor", vscode.TreeItemCollapsibleState.None)]; // Return a single TreeItem
+            return [new this.noteItem(this.lang.translite("user_strings.no_active_editor"), vscode.TreeItemCollapsibleState.None)]; // Return a single TreeItem
         }
         return await this.mainData(element) // Return the children of the element
     }
