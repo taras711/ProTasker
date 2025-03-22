@@ -99,7 +99,14 @@
         "left": "pozosta o",
         "view": "Widok",
         "category": "Kategoria",
-        "categories": "Kategorie"
+        "categories": "Kategorie",
+        "choose_action": "Wybierz akcje"
+    },
+    "menus": {
+        "new_on_line": "Nowy w lini %line%",
+        "edit_on_line": "Edytuj w lini %line%",
+        "delete": "Usun",
+        "view": "Widok"
     },
     "protasker.language.description": "Wybierz jzyk interfejsu"
 }

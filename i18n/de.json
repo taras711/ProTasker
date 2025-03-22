@@ -99,7 +99,14 @@
         "left": "übrig",
         "view": "Ansicht",
         "category": "Kategorie",
-        "categories": "Kategorien"
+        "categories": "Kategorien",
+        "choose_action": "Aktion auswählen"
+    },
+    "menus": {
+        "new_on_line": "Neu auf Zeile %line%",
+        "edit_on_line": "Bearbeiten auf Zeile %line%",
+        "delete": "Löschen",
+        "view": "Ansicht"
     },
     "protasker.language.description": "Wählen Sie die Sprache des Interface"
 }

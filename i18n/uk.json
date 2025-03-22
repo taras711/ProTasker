@@ -99,7 +99,14 @@
         "left": "залишилося",
         "view": "Перегляд",
         "category": "Категорія",
-        "categories": "Категорії"
+        "categories": "Категорії",
+        "choose_action": "Виберіть дію"
+    },
+    "menus": {
+        "new_on_line": "Новий в рядку %line%",
+        "edit_on_line": "Редагувати в рядку %line%",
+        "delete": "Видалити",
+        "view": "Перегляд"
     },
     "protasker.language.description": "Оберіть мову інтерфейсу"
 }   

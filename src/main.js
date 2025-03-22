@@ -6,15 +6,28 @@ const fs = require("fs");
 const { setTimeagoLocale, formatTimeAgo } = require('./getTimeAgo');
 const {I18nManager} = require("./i18nManager");
 
+/**
+ * Main class constructor.
+ * @param {vscode.ExtensionContext} context The extension context.
+ * @description This constructor is used to initialize the extension.
+ * It sets up the extension context, registers commands, and initializes the notes explorer.
+ * It also sets up the notification interval and loads the notes data.
+ * @since 1.0.0
+ * @version 1.0.0
+ * @returns 
+ * @author taras711
+ */
+
 const notifiedDeadlines = new Set();
 
 class Main extends commandHelper {
+    
     constructor(context) {
         super(context);
         this.notifyInterval = null;
         
         this.context = context;
-        this.i18n = new I18nManager();;
+        this.i18n = new I18nManager();
         this.provider = null;
         this.notesExplorerProvider = null;
         
@@ -22,12 +35,19 @@ class Main extends commandHelper {
         
         this.commandsRegister();
         this.updateNotifications()
-        setTimeagoLocale();
-
-        this.init();
+        this.listeners();
         
+        setTimeagoLocale();
     }
 
+    /**
+     * Registers commands for the extension.
+     * 
+     * This method registers commands with the VS Code extension context. These commands include
+     * commands for opening settings, adding, editing, deleting notes and checklist items, as well as
+     * searching, filtering, and navigating notes and files within the user's workspace.
+     * @private
+     */
     commandsRegister(){
         this.comands([
             'openSettings', // open settings
@@ -40,6 +60,7 @@ class Main extends commandHelper {
             'addNoteToLine', // add note to line
             'editNote', // edit note
             'deleteNoteFromList', // delete note from list
+            'deleteNoteFromLine', // delete note from line
             'editNoteFromList', // edit note from list
             'searchNotes', // search notes
             'resetSearch', // reset search
@@ -47,10 +68,23 @@ class Main extends commandHelper {
             'goToNote', // go to note
             'goToFile', // go to file
             'deleteAll', // delete all notes,
-            'openedNote' // open note
+            'openedNote', // open note
+            'updateContext', // update context
+            "noteAction", // note action
+            "reloadList", // reload list
+            "clearList", // clear list
         ]);
     }
 
+
+    /**
+     * Initializes command callbacks and sets language translations for the extension.
+     * 
+     * This method sets up a variety of commands related to note management, such as adding, editing,
+     * deleting notes, checklist items, and handling search and navigation functionalities within the
+     * extension. It leverages Visual Studio Code's API to interact with the editor and the file system,
+     * allowing for note management directly within the user's workspace.
+     */
     init(){
         const i18n = this.i18n;
 
@@ -156,7 +190,7 @@ class Main extends commandHelper {
             // 5️⃣ Refresh UI
             this.provider.refresh();
             this.notesExplorerProvider.refresh();
-            this.highlightCommentedLines(editor, this.provider);
+            this.highlightCommentedLines(editor);
         });
 
         // set commands callback for add checklist items
@@ -282,12 +316,12 @@ class Main extends commandHelper {
         this.set('deleteNote', async (treeItem) => {
             const editor = vscode.window.activeTextEditor;
             const filePath = treeItem.parent || treeItem.path; // Get the filePath via findChecklistFilePath
-    
+            console.log(treeItem);
             if (!filePath) {
                 return;
             }
     
-            const confirm = await vscode.window.showWarningMessage(i18n.translite('user_strings.delete_the_note'), i18n.translite('user_strings.yes'), i18n.translite('user_strings.no'));
+            const confirm = await vscode.window.showWarningMessage(i18n.translite('user_strings.delete_this_note'), i18n.translite('user_strings.yes'), i18n.translite('user_strings.no'));
             if (confirm !== i18n.translite('user_strings.yes')) return;
     
             const isDirectory = this.provider.notesData.directories[filePath] !== undefined; // Check if it's a directory or a file
@@ -307,7 +341,7 @@ class Main extends commandHelper {
             await this.provider.saveNotesToFile(); // Save changes to the JSON file
             
             // Refresh UI
-            this.highlightCommentedLines(editor, this.provider);
+            this.highlightCommentedLines(editor);
             this.provider.refresh();
             this.notesExplorerProvider.refresh();
         });
@@ -345,9 +379,9 @@ class Main extends commandHelper {
             }
     
             // Combining all comments into one text
-            const fullText = lineNotes.map((note) => `${i18n.translite('user_strings.type')}: ${note.type}* \r\n ${i18n.translite('user_strings.content')}: ${note.content}. \r\n ${i18n.translite('user_strings.created_at')}: ${note.createdAt}`).join("\n\n");
+            const fullText = lineNotes.map((note) => `${i18n.translite('user_strings.type')}: ${note.type}* \r\n ${i18n.translite('user_strings.content')}: ${note.content}. \r\n ${i18n.translite('user_strings.created_at')}: ${new Date(note.createdAt).toLocaleString()}`).join("\n\n");
     
-            vscode.window.showInformationMessage(`📝 ${i18n.translite('user_strings.comments_for_line')} ${line}:\n\n${fullText}`, { modal: true });
+            vscode.window.showInformationMessage(`📝 ${i18n.translite('user_strings.comments_for_line')} ${line}:\n\n${fullText}`, {modal: true});
         });
 
         // set commands callback for addNoteToLine
@@ -366,7 +400,7 @@ class Main extends commandHelper {
         
                 // Add the note to the line
                 this.provider.addNoteToLine(filePath, lineNumber, "line", noteContent); // 📝 add note to line
-                this.highlightCommentedLines(editor, this.provider); // Update highlight commented lines
+                this.highlightCommentedLines(editor); // Update highlight commented lines
                 this.notesExplorerProvider.refresh();
             }
         });
@@ -410,14 +444,55 @@ class Main extends commandHelper {
                 this.notesExplorerProvider.refresh()
                 vscode.window.showInformationMessage(`${i18n.translite('user_strings.note_content_has_been_edited')} ${i18n.translite('user_strings.successfully')}.`);
             }
-            this.highlightCommentedLines(editor, this.provider); // Update highlight commented lines
+            this.highlightCommentedLines(editor); // Update highlight commented lines
         });
+
+        this.set('deleteNoteFromLine', async () => { 
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) return;
+        
+            const lineNumber = editor.selection.active.line + 1;  // Get the line number
+            const filePath = path.normalize(editor.document.uri.fsPath).replace(/\\/g, "/").toLowerCase(); // Get the file path
+        
+            
+            // Check if there are notes on the current line
+            if (!this.lineHasNote()) {
+                vscode.window.showInformationMessage(i18n.translite('user_strings.no_notes_on_this_line'));
+                return;
+            }
+        
+            const notesForFile = this.provider.notesData.lines[filePath] || []; // Search for notes
+            const notesOnLine = notesForFile.filter(note => note.line === lineNumber); // Search for notes on the current line
+        
+            // Check if there are notes on the current line
+            if (notesOnLine.length === 0) {
+                vscode.window.showInformationMessage(i18n.translite('user_strings.no_notes_on_this_line'));
+                return;
+            }
+
+            const confirm = await vscode.window.showInformationMessage(`${i18n.translite('user_strings.delete_this_note')} ${notesOnLine[0].content}`, i18n.translite('user_strings.yes'), i18n.translite('user_strings.no'));
+        
+            const noteToDelete = notesOnLine[0]; // Get the first note on the current line  
+        
+            // dElete the note
+            if (confirm === i18n.translite('user_strings.yes')) {
+                // update notesData 
+                this.provider.notesData.lines[filePath] = this.provider.notesData.lines[filePath].filter(note => note.id !== noteToDelete.id);
+                // save notesData
+                await this.provider.saveNotesToFile();
+                this.provider.refresh(); // Refresh UI
+                this.notesExplorerProvider.refresh();
+                this.highlightCommentedLines(editor);
+                vscode.window.showInformationMessage(`${i18n.translite('user_strings.note_has_been_deleted')} ${i18n.translite('user_strings.successfully')}.`);
+            }
+            
+            })
 
         // set commands callback for deleteNote
         this.set('deleteNoteFromList', async (treeItem) => {
             treeItem.data = treeItem?.data ? treeItem.data : treeItem.context; // Get the note data
             const settings = this.getProTaskerSettings(); // Get settings from the extension
-    
+            console.log(treeItem)
             // Check if the note data exists
             if (!treeItem || !treeItem.data || !treeItem.data.id) {
                 vscode.window.showErrorMessage(`${i18n.translite('user_strings.error')}: ${i18n.translite('user_strings.note_data')} ${i18n.translite('user_strings.not_found')}.`);
@@ -434,7 +509,7 @@ class Main extends commandHelper {
             let targetCollection = null;
             let targetKey = null;
             let stillExists = true;
-    
+            
             // check if path exists and set targetCollection and targetKey
             if (path || treeItem.context.path || treeItem.context.dirpath || treeItem.context.filepath) {
                 targetCollection = this.provider.notesData[prov];
@@ -475,7 +550,7 @@ class Main extends commandHelper {
             // Refresh UI
             this.provider.refresh();
             this.notesExplorerProvider.refresh();
-            this.highlightCommentedLines(vscode.window.activeTextEditor, this.provider); //Update highlight commented lines
+            this.highlightCommentedLines(vscode.window.activeTextEditor); //Update highlight commented lines
     
             vscode.window.showInformationMessage(`${i18n.translite('user_strings.note_has_been_deleted')} ${i18n.translite('user_strings.successfully')}.`);
         });
@@ -552,7 +627,7 @@ class Main extends commandHelper {
             // Refresh UI
             this.provider.refresh();
             this.notesExplorerProvider.refresh();
-            this.highlightCommentedLines(vscode.window.activeTextEditor, this.provider); //Update highlight commented lines
+            this.highlightCommentedLines(vscode.window.activeTextEditor); //Update highlight commented lines
         });
 
         // set commands callback for search
@@ -737,7 +812,7 @@ class Main extends commandHelper {
                 await this.provider.saveNotesToFile();
             
                 // Refresh UI
-                this.highlightCommentedLines(editor, this.provider);
+                this.highlightCommentedLines(editor);
                 this.provider.refresh();
                 this.notesExplorerProvider.refresh();
             }
@@ -777,8 +852,167 @@ class Main extends commandHelper {
 
             
         });
+
+        this.set("noteAction", async (note) => {
+            const editor = vscode.window.activeTextEditor;
+            const i18n = this.i18n;
+            if (!editor) return;
+
+            // Узнать на какой (Номер строки) строке находится курсор
+            const lineNumber = (editor.selection.active.line + 1).toString();  // Get the line number
+
+
+            const items = []
+
+            this.lineHasNoteState.edit ? items.push({label: i18n.translite('menus.edit_on_line').replace('%line%', lineNumber)}) : null;
+            this.lineHasNoteState.show ? items.push({label: i18n.translite('menus.view')}) : null;
+            this.lineHasNoteState.delete ? items.push({label: i18n.translite('menus.delete')}) : null;
+            this.lineHasNoteState.add ? items.push({label: i18n.translite('menus.new_on_line').replace('%line%', lineNumber)}) : null;
+
+            // const noteAction = await vscode.window.showQuickPick([i18n.translite('user_strings.edit_note'), i18n.translite('user_strings.open_note'), i18n.translite('user_strings.delete_note')], {
+            const noteAction = await vscode.window.showQuickPick(items, {
+                placeHolder: i18n.translite('user_strings.choose_action')
+            });
+
+            if (!noteAction) return;
+            
+            if (noteAction.label === i18n.translite('menus.edit_on_line').replace('%line%', lineNumber)) {
+                vscode.commands.executeCommand('protasker.editNote', note);
+            } else if (noteAction.label === i18n.translite('menus.view')) {
+                vscode.commands.executeCommand('protasker.openComment', note);
+            } else if (noteAction.label === i18n.translite('menus.delete')) {
+                vscode.commands.executeCommand('protasker.deleteNoteFromLine', note);
+            } else if (noteAction.label === i18n.translite('menus.new_on_line').replace('%line%', lineNumber)) {
+                vscode.commands.executeCommand('protasker.addNoteToLine', note);
+            }
+        });
+
+        this.set("reloadList", async () => {
+            this.provider.refresh();
+            this.notesExplorerProvider.refresh();
+        });
+
+        this.set("clearList", async () => {
+            const i18n = this.i18n;
+
+            const response = await vscode.window.showInformationMessage(`${i18n.translite('user_strings.clear')} ${i18n.translite('user_strings.content')}`, i18n.translite('user_strings.yes'), i18n.translite('user_strings.no'));
+            if (response === i18n.translite('user_strings.yes')) {
+                this.provider.notesData = {directories: {}, files: {}, lines: {}};
+                this.notesExplorerProvider.notesData = {directories: {}, files: {}, lines: {}};
+
+                this.provider.saveNotesToFile();
+
+                this.provider.refresh();
+                this.notesExplorerProvider.refresh();
+
+                vscode.window.showInformationMessage(i18n.translite('user_strings.successfully'));
+            }
+            return;
+        })
     }
 
+    /**
+     * This function is responsible for setting up event listeners for the VS Code application.
+     * It listens for the following events: 
+     * - onDidChangeTextEditorSelection: updates setContext and highlights commented lines
+     * - onDidOpenTextDocument: highlights commented lines
+     * - onDidChangeVisibleTextEditors: updates setContext and highlights commented lines
+     * - onDidChangeActiveTextEditor: updates setContext and highlights commented lines
+     * - onDidChangeConfiguration: updates the language and refreshes the providers
+     */
+    listeners() {
+        const i18n = this.i18n;
+        vscode.window.onDidChangeTextEditorSelection(async event => {
+            await this.updateLineHasNoteState(event.textEditor); // update setContext
+        });
+
+        vscode.workspace.onDidOpenTextDocument(doc => {
+            const editor = vscode.window.activeTextEditor;
+    
+            // if the opened document is the same as the active editor 
+            if (editor && editor.document.uri.fsPath === doc.uri.fsPath) {
+                this.highlightCommentedLines(editor);
+            }
+        });
+
+        vscode.window.onDidChangeVisibleTextEditors(async () => {
+            if (vscode.window.activeTextEditor) {
+               this.updateLineHasNoteState(vscode.window.activeTextEditor) // update setContext
+           }
+        });
+
+        vscode.window.onDidChangeActiveTextEditor(editor => {
+            if (!editor) {
+                setTimeout(() => {
+                    const activeEditor = vscode.window.activeTextEditor; // active editor
+                    if (activeEditor) {
+                        this.highlightCommentedLines(activeEditor); // update highlight commented lines
+                    }
+                    this.updateLineHasNoteState(activeEditor); // update setContext
+                }, 500); // wait 500ms
+                
+                return;
+            }
+        
+            this.notesExplorerProvider.refresh(); // update notes explorer
+            this.highlightCommentedLines(editor); // update highlight commented lines
+        });
+
+        vscode.workspace.onDidChangeConfiguration(event => {
+            if (event.affectsConfiguration('protasker')) {
+    
+                setTimeagoLocale();
+    
+                i18n.loadTranslations().then(() => {
+                    vscode.window.showInformationMessage(i18n.translite("settings.languageChanged"));
+                });
+    
+                this.provider.notesData.lang = vscode.workspace.getConfiguration('protasker').get('language');
+                
+                // refresh providers
+                this.provider.refresh();
+                this.notesExplorerProvider.refresh();
+                this.updateNotifications();
+                this.i18n.loadTranslations();
+            }
+        });
+
+        if (vscode.window.activeTextEditor) {
+            this.highlightCommentedLines(vscode.window.activeTextEditor);
+        }
+    }
+
+    /**
+     * Updates the lineHasNote state and context menu items based on the presence of notes on the current line.
+     *
+     * @async
+     * @param {vscode.TextEditor} editor - The active text editor.
+     * @returns {Promise<void>} - A promise that resolves when the update is complete.
+     * @description This function checks if there are any notes on the current line of the active editor
+     * and updates the lineHasNote state accordingly. It then updates the context menu items based on
+     * the lineHasNote state to allow or restrict actions such as deleting, opening, editing, or adding notes.
+     */
+    async updateLineHasNoteState(editor) {
+        if (!editor) return;
+    
+        await this.lineHasNote();
+    }
+
+    /**
+     * Retrieves the ProTasker extension settings from the VS Code workspace configuration.
+     *
+     * This function accesses the 'protasker' configuration section and returns
+     * an object containing various settings for the ProTasker extension.
+     * 
+     * @returns {Object} An object with the following properties:
+     * - `language`: The selected interface language.
+     * - `customTypes`: An array of custom note types.
+     * - `noteDisplay`: The display mode for notes (icon, highlight, or inline text).
+     * - `highlightColor`: The color used for line highlights.
+     * - `showTimeAgo`: Boolean indicating if notes should display the time ago format.
+     * - `notificatons`: Boolean indicating if notifications are enabled.
+     * - `inlineTextColor`: Color for inline text notes.
+     */
     getProTaskerSettings() {        
         const config = vscode.workspace.getConfiguration('protasker');
         return {
@@ -792,6 +1026,16 @@ class Main extends commandHelper {
         };
     }
 
+    /**
+     * Gets the target path based on the user's selection.
+     * @param {string} selection - The user's selection ('Line' or 'Directory').
+     * @returns {Promise<string|null>} The target path or null if no editor is open.
+     * @description
+     * This method gets the target path based on the user's selection.
+     * If the selection is 'Line', it returns the file path of the currently open document.
+     * If the selection is 'Directory', it opens a file dialog for the user to select a directory.
+     * If no editor is open, it returns null.
+     */
     async getTargetPath(selection) {
         const i18n = this.i18n;
         const editor = vscode.window.activeTextEditor;
@@ -807,7 +1051,8 @@ class Main extends commandHelper {
                 canSelectFiles: false,
                 canSelectFolders: true,
                 canSelectMany: false,
-                openLabel: i18n.translite("user_string.select_directory_for_notes")
+                openLabel: i18n.translite("user_strings.done"),
+                title: i18n.translite("user_strings.select_directory_for_notes")
             });
     
             return uri && uri.length > 0 ? uri[0].fsPath : null; // Return the path of the selected directory
@@ -816,7 +1061,17 @@ class Main extends commandHelper {
         return editor ? editor.document.uri.fsPath : null; // Return the file path of the currently open document
     }
 
-    highlightCommentedLines(editor, provider) {
+    /**
+     * Highlights lines with notes in the active editor based on user settings.
+     * @param {vscode.TextEditor} editor - The active text editor.
+     * @returns {Promise<void>}
+     * @description This method highlights lines with notes in the active editor based on user settings.
+     * It uses the notes explorer provider to get the notes for the current file and line numbers.
+     * It then applies the highlight styles based on the user settings (icon, highlight, or inline text).
+     */
+    async highlightCommentedLines(editor) {
+        const i18n = await this.i18n;
+        const provider = this.provider;
         // Check if the active editor and document are available
         if (!editor || !editor.document) {
             return;
@@ -859,7 +1114,7 @@ class Main extends commandHelper {
                 // Create the decoration
                 const decoration = {
                     range: new vscode.Range(lineNumber - 1, 0, lineNumber - 1, 100),
-                    hoverMessage: new vscode.MarkdownString(`**${this.i18n.translite('user_strings.note')}:** ${note.content}  \n **${this.i18n.translite('user_strings.type')}:** ${note.type}  \n **${this.i18n.translite('user_strings.created_at')}:** ${formatTimeAgo(new Date(note.createdAt))}`),
+                    hoverMessage: new vscode.MarkdownString(`**${i18n.translite('user_strings.note')}:** ${note.content}  \n **${i18n.translite('user_strings.type')}:** ${note.type}  \n **${i18n.translite('user_strings.created_at')}:** ${formatTimeAgo(new Date(note.createdAt))}`),
                     renderOptions: {}
                 };
                 // Apply styles based on user settings
@@ -912,6 +1167,14 @@ class Main extends commandHelper {
         editor.setDecorations(provider.activeDecorationType, decorationsArray);
     }
 
+    /**
+     * Finds the file path associated with a checklist with the given id.
+     * @function
+     * @memberof Main
+     * @param {string} checklistId - The id of the checklist to search for
+     * @param {string} [type="files"] - The type of notes data to search. Defaults to "files".
+     * @returns {string|null} - The file path associated with the checklist if found, otherwise null
+     */
     findChecklistFilePath(checklistId, type = "files") {
         
         const file = this.provider.notesData[type]; // Get the notes data
@@ -930,6 +1193,12 @@ class Main extends commandHelper {
         return null; // Checklist not found
     }
 
+    /**
+     * Checks if there are notes on the current line of the active editor and updates the lineHasNote state.
+     * @function
+     * @memberof Main
+     * @returns {Promise<boolean>} - True if there are notes on the current line of the active editor
+     */
     async lineHasNote() {
         const editor = vscode.window.activeTextEditor;
         if (!editor) return false;
@@ -937,19 +1206,28 @@ class Main extends commandHelper {
         
         const lineNumber = editor.selection.active.line + 1; // Get the line number and file path
         const filePath = path.normalize(editor.document.uri.fsPath).replace(/\\/g, "/").toLowerCase(); // Get the file path
-    
+
         const notesForFile = await this.provider.notesData.lines[filePath] || [];// Search for notes
         const notesOnLine = await notesForFile.filter(note => note.line === lineNumber);// Search for notes on the current line
 
         // update lineHasNote state 
         let newstate = await notesOnLine.length > 0 ? true : false;
-        this.lineHasNoteState.edit = newstate;
-        this.lineHasNoteState.delete = newstate;
-        this.lineHasNoteState.show = newstate;
-        this.lineHasNoteState.add = newstate ? false : true;
-        return newstate;  // if notes are found on the current line
+ 
+        this.lineHasNoteState = {
+            edit: newstate,
+            show: newstate,
+            delete: newstate,
+            add: newstate ? false : true
+        };
     }
 
+    /**
+     * Updates the notification interval based on the current notification setting.
+     * If notifications are enabled, it will check deadlines every 15 seconds.
+     * If notifications are disabled, it will stop checking deadlines.
+     * @function
+     * @memberof Main
+     */
     updateNotifications() {
         // Get the current notification setting
         const enableNotifications = vscode.workspace.getConfiguration("protasker").get("notificatons");
@@ -968,6 +1246,10 @@ class Main extends commandHelper {
         }
     }
 
+    /**
+     * Checks deadlines in notes data and displays notifications if they are approaching or have passed
+     * @private
+     */
     checkDeadlines() {
         const i18n = this.i18n;
         const now = Date.now(); // Get the current time

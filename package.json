@@ -211,10 +211,31 @@
         "command": "protasker.deleteAll",
         "title": "Clear all",
         "category": "ProTasker"
+      },
+      {
+        "command": "protasker.noteAction",
+        "title": "📌 Note Action ...",
+        "category": "ProTasker"
+      },
+      {
+        "command": "protasker.reloadList",
+        "title": "Reload List",
+        "category": "ProTasker",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "protasker.clearList",
+        "title": "Clear List",
+        "category": "ProTasker",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
       "editor/context": [
+        {
+          "command": "protasker.noteAction",
+          "group": "navigation"
+        },
         {
           "command": "protasker.openComment",
           "when": "protasker.openComment",
@@ -247,6 +268,17 @@
           "command": "protasker.openSettings",
           "when": "view == sidebar_protasker_id1 || view == notesExplorer",
           "group": "navigation"
+        },
+        {
+          "command": "protasker.reloadList",
+          "when": "view == sidebar_protasker_id1 || view == notesExplorer",
+          "group": "navigation"
+        },
+        {
+          "command": "protasker.clearList",
+          "when": "view == sidebar_protasker_id1",
+          "group": "navigation",
+          "icon": "$(trash)"
         },
         {
           "command": "protasker.filterNotes",
@@ -292,12 +324,12 @@
         },
         {
           "command": "protasker.editNoteFromList",
-          "when": "viewItem == noteItem || viewItem == line",
+          "when": "viewItem == noteItem || viewItem == checklist || viewItem == line || viewItem == filepath || viewItem == dirpath",
           "group": "navigation"
         },
         {
           "command": "protasker.deleteNoteFromList",
-          "when": "viewItem == noteItem || viewItem == checklist || viewItem == line",
+          "when": "viewItem == noteItem || viewItem == line || viewItem == filepath || viewItem == dirpath",
           "group": "navigation"
         },
         {
@@ -308,7 +340,7 @@
         },
         {
           "command": "protasker.goToFile",
-          "when": "viewItem == noteItem",
+          "when": "viewItem == filepath",
           "group": "navigation",
           "icon": "$(search)"
         },

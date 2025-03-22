@@ -99,7 +99,14 @@
         "left": "剩余",
         "view": "查看",
         "category": "类别",
-        "categories": "类别"
+        "categories": "类别",
+        "choose_action": "选择操作"
+    },
+    "menus": {
+        "new_on_line": "新行 %line%",
+        "edit_on_line": "编辑行 %line%",
+        "delete": "删除",
+        "view": "查看"
     },
     "protasker.language.description": "选择界面语言"
 }

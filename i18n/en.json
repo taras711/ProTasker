@@ -99,9 +99,14 @@
         "left": "left",
         "view": "View",
         "category": "Category",
-        "categories": "Categories"
-        
-        
+        "categories": "Categories",
+        "choose_action": "Choose action"
+    },
+    "menus": {
+        "new_on_line": "New on line %line%",
+        "edit_on_line": "Edit on line %line%",
+        "delete": "Delete",
+        "view": "View"
     },
     "protasker.language.description": "Choose Interface Language"
     

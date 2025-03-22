@@ -99,7 +99,15 @@
         "left": "zbývá",
         "view": "Zobrazit",
         "category": "Kategorie",
-        "categories": "Kategorie"
+        "categories": "Kategorie",
+        "choose_action": "Vyberte akci"
+    },
+
+    "menus": {
+        "new_on_line": "Pridat nový na řádku %line%",
+        "edit_on_line": "Upravit na řádku %line%",
+        "delete": "Odstranit",
+        "view": "Zobrazit"
     },
     "protasker.language.description": "Vyberte jazyk rozhraní"
 }

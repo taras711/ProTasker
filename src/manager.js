@@ -178,7 +178,7 @@ class NoteManager{
                             // Return the NoteItem object
                             return new NoteItem(label, 
                                 note.type === 'checklist' ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Collapsed, 
-                                { ...note, contextValue: note.type === 'checklist' ? 'checklist' : "noteItem", dirpath: element.context.directory, icon: getIcon(note.type) }
+                                { ...note, contextValue: note.type === 'checklist' ? 'checklist' : "dirpath", dirpath: element.context.directory, icon: getIcon(note.type) }
                             );
                         })
                 );
@@ -212,7 +212,7 @@ class NoteManager{
                         // Return the NoteItem object
                         return new NoteItem(label, 
                             note.type === 'checklist' ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Collapsed, 
-                            { ...note, contextValue: note.type === 'checklist' ? "checklist" : "noteItem", filepath: element.context.file, icon: getIcon(note.type) }
+                            { ...note, contextValue: note.type === 'checklist' ? "checklist" : "filepath", filepath: element.context.file, icon: getIcon(note.type) }
                         );
                     })
                 );

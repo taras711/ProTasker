@@ -99,7 +99,14 @@
         "left": "restant",
         "view": "Vue",
         "category": "Catégorie",
-        "categories": "Catégories"
+        "categories": "Catégories",
+        "choose_action": "Choisissez une action"
+    },
+    "menus": {
+        "new_on_line": "Nouvelle ligne %line%",
+        "edit_on_line": "Modifier sur la ligne %line%",
+        "delete": "Supprimer",
+        "view": "Vue"
     },
     "protasker.language.description": "Choisissez la langue de l'interface"
 }
