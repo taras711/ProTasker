@@ -2,6 +2,8 @@
 
 **ProTasker** is a powerful VS Code extension designed for managing notes, tasks, comments, and events within your code. It helps you organize your workflow, track code changes, and manage your work processes directly from the editor.
 
+![ProTasker Banner](icons/protasker_banner.jpg)
+
 ## 🚀 Features
 
 - ✅ **Create and manage notes** in code, files, and folders.
@@ -56,8 +58,9 @@ The extension is ready to use!
 
 ### 🔹 Creating Notes, Comments, or Checklists
 1. Right-click in your code.
-2. Select **"Add Note / Comment / Checklist"**.
-3. Enter the text and save it.
+2. Select **"Note Action"** in context menu
+3. Choose **"Add Note / Comment / Checklist ..."**.
+4. Enter the text and save it.
 
 ### 🔹 Viewing All Entries
 1. Open the **ProTasker side panel**.
