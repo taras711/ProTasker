@@ -22,7 +22,6 @@ class I18nManager {
         
         this.currentLocale = settings.get('language');
         const translationsPath = path.join(__dirname, '..', "i18n", `${this.currentLocale}.json`);
-        console.error('Error loading translations:', this.currentLocale);
         try {
             const fileContent = await fs.readFileSync(translationsPath, 'utf8');
             this.translations = JSON.parse(fileContent);
