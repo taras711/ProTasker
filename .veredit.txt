@@ -1,38 +1,18 @@
 # p - path, f - function name, c - code, ** - comment
 
--- (p) DataManager.js
-  -> (f) addEntry()
+-- (p) manager.js
+  -> (f) mainData()
     -> (c) [
-        ...if(!target?.[typeKey]) target[typeKey] = []...
+        (line 215) -> { ...note, contextValue: note.type === 'checklist' ? "checklist" : "filepath", filepath: element.context.file, icon: getIcon(note.type) }
+        (line 181) -> { ...note, contextValue: note.type === 'checklist' ? 'checklist' : "dirpath", dirpath: element.context.directory, icon: getIcon(note.type) }
     ]
-    ** Привязка нового (пользовательського) типа записи **
+    ** Определение нового типа **
   
--- (p) extension.js
-  -> (f) vscode.commands.registerCommand("protasker.goToNote"...
+-- (p) package.json
+  -> (f) "view/item/context"
     -> (c) [
-        if (!note || !note.context.path || typeof note.context.line !== "number") {
-            vscode.window.showErrorMessage("Ошибка: не удалось найти привязанную строку.");
-            return;
-        }
-    
-        const fileUri = vscode.Uri.file(note.context.path);
-    
-        try {
-            // Проверяем, существует ли файл
-            await vscode.workspace.fs.stat(fileUri); // Если файла нет, бросит ошибку
-            
-            // Если файл найден, открываем его
-            const document = await vscode.workspace.openTextDocument(fileUri);
-            const editor = await vscode.window.showTextDocument(document);
-    
-            // Перелистываем к нужной строке
-            const position = new vscode.Position(note.context.line - 1, 0);
-            const range = new vscode.Range(position, position);
-            editor.selection = new vscode.Selection(position, position);
-            editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
-        } catch (error) {
-            // Если файл не найден или произошла ошибка, показываем сообщение
-            vscode.window.showErrorMessage(`Файл не найден: ${fileUri.fsPath}`);
-        }
+       (line 295) -> "when": "viewItem == noteItem || viewItem == line || viewItem == filepath || viewItem == dirpath",
+       (line 300) -> "when": "viewItem == noteItem || viewItem == checklist || viewItem == line || viewItem == filepath || viewItem == dirpath",
+       (line 311) -> "when": "viewItem == filepath",
     ]
     ** Перехват ошибки если файл по указаному пути не найден **
