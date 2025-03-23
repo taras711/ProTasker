@@ -1,17 +1,15 @@
 const vscode = require("vscode");
 const timeago = require("timeago.js");
-const locales = require("timeago.js/lib/lang"); // Импорт всех локалей
+const locales = require("timeago.js/lib/lang"); // Timeago.js locales
 
 /**
- * Устанавливает локаль для timeago.js
+ * Sets the locale for timeago.js
  */
 function setTimeagoLocale() {
     const settings = vscode.workspace.getConfiguration("protasker");
     let currentLocale = settings.get("language") || "en_US";
 
     currentLocale == "en" ? (currentLocale = "en_US") : null;
-
-    console.log("Current locale:", locales);
 
     if (locales[currentLocale]) {
         timeago.register(currentLocale, locales[currentLocale]);
@@ -21,9 +19,9 @@ function setTimeagoLocale() {
 }
 
 /**
- * Форматирует дату в стиль "time ago"
- * @param {Date} date Дата
- * @returns {string} Отформатированное время
+ * Formats a date using timeago.js
+ * @param {Date} date Date
+ * @returns {string} Formatted date
  */
 function formatTimeAgo(date) {
     const settings = vscode.workspace.getConfiguration("protasker");
@@ -32,11 +30,6 @@ function formatTimeAgo(date) {
     return timeago.format(date, currentLocale);
 }
 
-// Вызываем настройку локали
-setTimeagoLocale();
-
-// Пример использования
-console.log(formatTimeAgo(new Date()));
 
 module.exports = {
     setTimeagoLocale,

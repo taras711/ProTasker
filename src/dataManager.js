@@ -91,6 +91,7 @@ class NotesExplorer extends NoteManager{
      * @throws {Error} If the element is undefined.
      */
     getTreeItem(element) {
+        
         // Check if the element is undefined
         if (!element) {
             return new vscode.TreeItem("Empty", vscode.TreeItemCollapsibleState.None);

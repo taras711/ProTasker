@@ -316,7 +316,7 @@ class Main extends commandHelper {
         this.set('deleteNote', async (treeItem) => {
             const editor = vscode.window.activeTextEditor;
             const filePath = treeItem.parent || treeItem.path; // Get the filePath via findChecklistFilePath
-            console.log(treeItem);
+            
             if (!filePath) {
                 return;
             }
@@ -478,11 +478,18 @@ class Main extends commandHelper {
             if (confirm === i18n.translite('user_strings.yes')) {
                 // update notesData 
                 this.provider.notesData.lines[filePath] = this.provider.notesData.lines[filePath].filter(note => note.id !== noteToDelete.id);
+                
+                // Check if the file has no notes
+                if (this.provider.notesData.lines[filePath].length === 0) {
+                    delete this.provider.notesData.lines[filePath];
+                }
+                
                 // save notesData
                 await this.provider.saveNotesToFile();
+                
                 this.provider.refresh(); // Refresh UI
                 this.notesExplorerProvider.refresh();
-                this.highlightCommentedLines(editor);
+                await this.highlightCommentedLines(editor);
                 vscode.window.showInformationMessage(`${i18n.translite('user_strings.note_has_been_deleted')} ${i18n.translite('user_strings.successfully')}.`);
             }
             
@@ -492,7 +499,7 @@ class Main extends commandHelper {
         this.set('deleteNoteFromList', async (treeItem) => {
             treeItem.data = treeItem?.data ? treeItem.data : treeItem.context; // Get the note data
             const settings = this.getProTaskerSettings(); // Get settings from the extension
-            console.log(treeItem)
+
             // Check if the note data exists
             if (!treeItem || !treeItem.data || !treeItem.data.id) {
                 vscode.window.showErrorMessage(`${i18n.translite('user_strings.error')}: ${i18n.translite('user_strings.note_data')} ${i18n.translite('user_strings.not_found')}.`);
@@ -632,6 +639,13 @@ class Main extends commandHelper {
 
         // set commands callback for search
         this.set('searchNotes', async () => {
+            // Check if the data is empty or not
+            const data = this.provider.notesData;
+            if (Object.keys(data.directories).length === 0 && Object.keys(data.files).length === 0 && Object.keys(data.lines).length === 0) {
+                vscode.window.showInformationMessage(`${i18n.translite('user_strings.search_query')}: ${i18n.translite('user_strings.no_notes')}.`);
+                return;
+            }
+
             const query = await vscode.window.showInputBox({
                 placeHolder: `🔍 ${i18n.translite('user_strings.enter_search_query')}`,
                 prompt: i18n.translite('user_strings.enter_search_query')
@@ -662,6 +676,13 @@ class Main extends commandHelper {
         this.set('filterNotes', async () => {
             const settings = this.getProTaskerSettings(); // Get settings from the extension
             const customTypes = []; // Array to store custom note types
+
+            // Check if the data is empty or not
+            const data = this.provider.notesData;
+            if (Object.keys(data.directories).length === 0 && Object.keys(data.files).length === 0 && Object.keys(data.lines).length === 0) {
+                vscode.window.showInformationMessage(`${i18n.translite('user_strings.filter')}: ${i18n.translite('user_strings.no_notes')}.`);
+                return;
+            }
     
             // Add custom note types to the array
             settings.customTypes.map(note => {
@@ -895,6 +916,13 @@ class Main extends commandHelper {
         this.set("clearList", async () => {
             const i18n = this.i18n;
 
+            // Check if the data is empty or not
+            const data = this.provider.notesData;
+            if (Object.keys(data.directories).length === 0 && Object.keys(data.files).length === 0 && Object.keys(data.lines).length === 0) {
+                vscode.window.showInformationMessage(i18n.translite('user_strings.no_data'));
+                return;
+            }
+
             const response = await vscode.window.showInformationMessage(`${i18n.translite('user_strings.clear')} ${i18n.translite('user_strings.content')}`, i18n.translite('user_strings.yes'), i18n.translite('user_strings.no'));
             if (response === i18n.translite('user_strings.yes')) {
                 this.provider.notesData = {directories: {}, files: {}, lines: {}};
@@ -962,18 +990,18 @@ class Main extends commandHelper {
             if (event.affectsConfiguration('protasker')) {
     
                 setTimeagoLocale();
-    
+                
+                // 
                 i18n.loadTranslations().then(() => {
                     vscode.window.showInformationMessage(i18n.translite("settings.languageChanged"));
                 });
     
                 this.provider.notesData.lang = vscode.workspace.getConfiguration('protasker').get('language');
-                
                 // refresh providers
                 this.provider.refresh();
                 this.notesExplorerProvider.refresh();
                 this.updateNotifications();
-                this.i18n.loadTranslations();
+                
             }
         });
 
@@ -1070,11 +1098,13 @@ class Main extends commandHelper {
      * It then applies the highlight styles based on the user settings (icon, highlight, or inline text).
      */
     async highlightCommentedLines(editor) {
-        const i18n = await this.i18n;
-        const provider = this.provider;
+        const i18n = this.i18n;
+        const provider = await this.provider;
         // Check if the active editor and document are available
         if (!editor || !editor.document) {
+            console.log("No editor or document");
             return;
+            
         }
         const settings = this.getProTaskerSettings(); // Get settings
 
@@ -1088,7 +1118,7 @@ class Main extends commandHelper {
 
         // Check if a matching file path was found
         if (!matchedPath) {
-            return;
+            console.log("Matching file path was found");
         }
 
         // Clear existing decorations

@@ -371,6 +371,7 @@
   },
   "dependencies": {
     "node-notifier": "^10.0.1",
+    "timeago": "^1.6.7",
     "timeago.js": "^4.0.2"
   }
 }

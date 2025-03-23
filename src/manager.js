@@ -127,7 +127,6 @@ class NoteManager{
             // Get all items
             const allItems = [...items, ...directories, ...files, ...lines];
 
-            console.log(allItems);
             // Check if allItems is empty
             if (allItems.length == 0) {
                 allItems.push(new NoteItem(`📭 ${this.lang.translite('user_strings.no_notes')}`, vscode.TreeItemCollapsibleState.None));

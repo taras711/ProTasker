@@ -1,11 +1,7 @@
 const vscode = require('vscode');
-const {I18nManager} = require("./src/i18nManager");
 const { Main } = require("./src/main");
 const { NotesExplorer } = require('./src/dataManager');
 const { NotesExplorerProvider } = require('./src/notesExplorerProvider');
-const { setTimeagoLocale, formatTimeAgo } = require('./src/getTimeAgo');
-
-const i18n = new I18nManager();
 
 function activate(context) {
     // initialize classes
@@ -20,23 +16,6 @@ function activate(context) {
     main.provider = provider;
     main.notesExplorerProvider = notesExplorerProvider;
     main.init()
-
-    // setContext
-   
-
-    // Initialization highlight commented lines in editor
-    
-    
-    // Change active editor
-    
-    
-    // configuration change handler
-   
-    
-    // update lineHasNote state
-    
-    
-    // update lineHasNote state
     
 }
 
