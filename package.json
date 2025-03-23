@@ -2,7 +2,7 @@
   "name": "protasker",
   "displayName": "Protasker",
   "description": "An easy way to organize code and tasks in one place.",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "author": "starass",
   "icon": "icons/protasker_logo.png",
   "engines": {
