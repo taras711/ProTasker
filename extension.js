@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const { Main } = require("./src/main");
 const { NotesExplorer } = require('./src/dataManager');
 const { NotesExplorerProvider } = require('./src/notesExplorerProvider');
+const {wvManager} = require('./src/wvDataManager');
 
 function activate(context) {
     // initialize classes
@@ -15,7 +16,8 @@ function activate(context) {
     main.register(treeView); // Register the tree view
     main.provider = provider;
     main.notesExplorerProvider = notesExplorerProvider;
-    main.init()
+    main.init();
+   
     
 }
 

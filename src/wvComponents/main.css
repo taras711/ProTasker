@@ -1,0 +1,138 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+header {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+header input {
+    padding: 10px;
+    width: 60%;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+}
+
+#container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+#directory-tree {
+    width: 20%;
+    background-color: #fff;
+    padding: 15px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+#directory-tree ul {
+    list-style: none;
+}
+
+#directory-tree li {
+    margin: 5px 0;
+    padding-left: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#directory-tree li:hover {
+    color: #3498db;
+}
+
+#records-timeline {
+    width: 75%;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+#timeline {
+    display: flex;
+    flex-direction: column;
+}
+
+.record {
+    background-color: #e8e8e8;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 10px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.3s forwards;
+}
+
+.record-header {
+    font-weight: bold;
+}
+
+.record-body {
+    margin-top: 10px;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.record-header ul {
+    margin: 0;
+    padding: 0;
+    margin-left: 15px;
+}
+
+li {
+    text-decoration: none;
+    list-style: none;
+}
+
+.record-header .checklist-item {
+    /* border-bottom: 1px solid; */
+    /* background: #ccc; */
+    font-weight: 100;
+    position: relative;
+    padding-left: 15px;
+    border-left: 3px solid #65a3ff;
+}
+
+.checklist-item:after {
+    content: "";
+    width: 13px;
+    height: 3px;
+    position: absolute;
+    display: block;
+    left: -1px;
+    top: 12px;
+    background: #65a3ff;
+    /* border-radius: 50px; */
+}
+
+.checklist-items {
+    position: relative;
+    /* background: #65a3ff; */
+}
+
+.checklist-items > span {
+    background: #65a3ff;
+    color: #fff;
+    padding: 2px;
+}

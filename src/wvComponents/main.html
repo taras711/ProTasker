@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProTasker - Webview</title>
+    <link rel="stylesheet" href="./main.css">
+</head>
+<body>
+
+    <header>
+        <input type="text" id="search" placeholder="Search..." onkeyup="filterRecords()">
+    </header>
+
+    <div id="container">
+        <aside id="directory-tree">
+            <h3>Directory Structure</h3>
+            <ul>
+                <!-- Directory structure will be rendered here -->
+            </ul>
+        </aside>
+
+        <main id="records-timeline">
+            <h3>Records Timeline</h3>
+            <div id="timeline">
+                <!-- Records will be rendered here -->
+            </div>
+        </main>
+    </div>
+
+    <script src="./main.js"></script>
+    <script>// Инициализация
+        renderDirectoryTree();
+    </script>
+</body>
+</html>
