@@ -130,7 +130,7 @@ This project is licensed under the [LICENSE](./LICENSE). See the full license in
 
 ## 👥 Authors & Acknowledgments
 
-**Main Developer**: [Taras711](https://github.com/taras711)
+**Main Developer**: [StarAss](https://github.com/taras711)
 
 ### Special Thanks:
 - **VS Code API** – For providing an excellent platform.
